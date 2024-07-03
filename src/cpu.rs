@@ -6,6 +6,7 @@ pub struct Core {
 }
 
 pub struct Cpu {
+    pub usage: f32,
     pub cores: Vec<Core>,
 }
 
@@ -19,10 +20,23 @@ impl Cpu {
         sys.refresh_cpu();
         for cpu in sys.cpus() {
             let usage: f32 = cpu.cpu_usage();
+            //let temperature: f32 = cpu.temperature();
             let core = Core { usage, temp: 0.0 };
             cores.push(core);
         }
-        let cpu = Cpu { cores };
+
+        let usage = sys.global_cpu_info().cpu_usage();
+        let cpu = Cpu { usage, cores };
         cpu
+    }
+
+    pub fn display(self) {
+        println!("---");
+        println!("CPU: {}%", self.usage);
+        println!("---");
+        for (i, cpu_core) in self.cores.into_iter().enumerate() {
+            println!("CPU {}: {}% {}°C", i, cpu_core.usage, cpu_core.temp);
+        }
+        println!("---");
     }
 }

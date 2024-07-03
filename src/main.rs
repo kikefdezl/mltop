@@ -1,10 +1,13 @@
 use cpu::Cpu;
+use memory::Memory;
 
 mod cpu;
+mod memory;
 
 fn main() {
     let cpu = Cpu::read();
-    for cpu_core in cpu.cores {
-        println!("CPU: {}", cpu_core.usage);
-    }
+    let memory = Memory::read();
+
+    cpu.display();
+    memory.display();
 }
