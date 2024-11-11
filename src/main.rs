@@ -1,10 +1,12 @@
 use cpu::Cpu;
+use display::DisplayManager;
 use memory::Memory;
 
 use std::{thread::sleep, time::Duration};
 
 mod config;
 mod cpu;
+mod display;
 mod memory;
 
 fn main() {
@@ -12,8 +14,9 @@ fn main() {
     loop {
         let cpu = Cpu::read();
         let memory = Memory::read();
-        cpu.display();
-        memory.display();
+        let display = DisplayManager { cpu, memory };
+
+        display.display();
 
         sleep(duration);
         print!("\x1B[2J\x1B[1;1H");
