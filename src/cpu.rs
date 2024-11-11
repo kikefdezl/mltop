@@ -7,7 +7,7 @@ pub struct Core {
 }
 
 pub struct Cpu {
-    pub usage: f32,
+    pub usage: f32, // as a value between 0.0 and 100.0
     pub cores: Vec<Core>,
 }
 

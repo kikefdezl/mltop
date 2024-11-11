@@ -1,15 +1,15 @@
 use cpu::Cpu;
-use display_data::DisplayData;
 use display_manager::DisplayManager;
 use memory::Memory;
+use terminal_data::TerminalData;
 
 use std::{thread::sleep, time::Duration};
 
 mod config;
 mod cpu;
-mod display_data;
 mod display_manager;
 mod memory;
+mod terminal_data;
 mod utils;
 
 fn main() {
@@ -19,11 +19,11 @@ fn main() {
 
         let cpu = Cpu::read();
         let memory = Memory::read();
-        let display_data = DisplayData::get();
+        let term_data = TerminalData::get();
         let display = DisplayManager {
             cpu,
             memory,
-            data: display_data,
+            term_data,
         };
 
         display.display();

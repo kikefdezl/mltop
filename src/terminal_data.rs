@@ -1,19 +1,19 @@
 use terminal_size::{terminal_size, Height, Width};
 
-pub struct DisplayData {
+pub struct TerminalData {
     pub width: u16,
     pub height: u16,
 }
 
-impl DisplayData {
-    pub fn get() -> DisplayData {
+impl TerminalData {
+    pub fn get() -> TerminalData {
         let size = terminal_size();
         match size {
-            None => DisplayData {
+            None => TerminalData {
                 width: 80,
                 height: 24,
             },
-            Some((Width(w), Height(h))) => DisplayData {
+            Some((Width(w), Height(h))) => TerminalData {
                 width: w,
                 height: h,
             },
