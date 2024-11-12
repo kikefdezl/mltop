@@ -17,7 +17,9 @@ impl DisplayManager {
         let cpu_content = self.display_cpu();
         let memory_content = self.display_memory();
 
-        print!("{}", format!("{}{}", cpu_content, memory_content));
+        let content = format!("{}{}", cpu_content, memory_content);
+        print!("\x1B[2J\x1B[1;1H"); // clear the display
+        print!("{}", content);
     }
 
     fn display_cpu(&self) -> String {

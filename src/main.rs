@@ -14,9 +14,8 @@ mod utils;
 
 fn main() {
     let duration = Duration::from_millis(config::REFRESH_RATE_MILLIS);
-    loop {
-        print!("\x1B[2J\x1B[1;1H"); // clear the display
 
+    loop {
         let cpu = Cpu::read();
         let memory = Memory::read();
         let term_data = TerminalData::get();
