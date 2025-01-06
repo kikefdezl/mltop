@@ -15,13 +15,13 @@ use crossterm::{
 
 use std::time::Duration;
 
+mod color;
 mod config;
 mod cpu;
 mod display_manager;
 mod memory;
 mod terminal_data;
 mod utils;
-mod color;
 
 fn main() -> io::Result<()> {
     let mut stdout = stdout();
