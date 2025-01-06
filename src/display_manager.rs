@@ -1,7 +1,9 @@
+use crate::color;
 use crate::cpu::Cpu;
 use crate::memory::Memory;
 use crate::terminal_data::TerminalData;
 use crate::utils;
+
 use std::io::Stdout;
 use std::io::Write as IoWrite;
 
@@ -74,7 +76,18 @@ impl DisplayManager {
     fn percentage_bar(width: u16, perc: f32) -> String {
         let mut s = String::from("[");
         let thresh = (width as f32 * (perc / 100.0)).round() as u16;
-        let full = (0..thresh).map(|_| "|").collect::<String>();
+
+        let fill = if perc > 80.0 {
+            color::red_text("|")
+        } else if perc > 50.0 {
+            color::orange_text("|")
+        } else if perc > 20.0 {
+            color::yellow_text("|")
+        } else {
+            String::from("|")
+        };
+
+        let full = (0..thresh).map(|_| fill.as_str()).collect::<String>();
         let empty = (thresh..width).map(|_| " ").collect::<String>();
         s.push_str(&full);
         s.push_str(&empty);
