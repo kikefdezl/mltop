@@ -2,7 +2,8 @@ use crate::cpu::Cpu;
 use crate::memory::Memory;
 use crate::terminal_data::TerminalData;
 use crate::utils;
-use std::fmt::Write;
+use std::io::Stdout;
+use std::io::Write as IoWrite;
 
 const BYTES_PER_GB: u64 = 1024_u64.pow(3);
 
@@ -13,18 +14,18 @@ pub struct DisplayManager {
 }
 
 impl DisplayManager {
-    pub fn display(&self) {
+    pub fn display(&self, stdout: &mut Stdout) {
         let cpu_content = self.display_cpu();
         let memory_content = self.display_memory();
 
         let content = format!("{}{}", cpu_content, memory_content);
-        print!("\x1B[2J\x1B[1;1H"); // clear the display
-        print!("{}", content);
+        write!(stdout, "{}", content).unwrap();
     }
 
     fn display_cpu(&self) -> String {
-        let total_bar = DisplayManager::percentage_bar(self.term_data.width - 14, self.cpu.usage);
-        let mut content = String::from(format!("CPU Total: {}\n", total_bar));
+        let total_bar = DisplayManager::percentage_bar(self.term_data.width - 15, self.cpu.usage);
+        let mut content = String::from(format!(" CPU Total: {}\r\n", total_bar));
+
         let num_cpus = self.cpu.cores.len();
         let cpu_rows = utils::fast_int_sqrt(num_cpus);
         let mut cpu_cols = 0;
@@ -38,31 +39,35 @@ impl DisplayManager {
             for c in 0..cpu_cols {
                 let i = c * cpu_rows + r;
                 let bar =
-                    DisplayManager::percentage_bar(core_width as u16 - 11, self.cpu.cores[i].usage);
-                write!(content, "CPU {:>2}: {} ", i, bar).unwrap();
+                    DisplayManager::percentage_bar(core_width as u16 - 12, self.cpu.cores[i].usage);
+                let bar_str = format!(" CPU {:>2}: {} ", i, bar);
+                content.push_str(&bar_str);
             }
-            write!(content, "\n").unwrap();
+            content.push_str("\r\n");
         }
         content
     }
 
     fn display_memory(&self) -> String {
         let mut content = String::new();
-        write!(
-            content,
-            "Memory Used: {:.1} GB\n",
+
+        let used = format!(
+            " Memory Used: {:.1} GB\r\n",
             self.memory.used as f32 / BYTES_PER_GB as f32
-        )
-        .unwrap();
-        write!(
-            content,
-            "Memory Total: {:.1} GB\n",
+        );
+        content.push_str(&used);
+
+        let total = format!(
+            " Memory Total: {:.1} GB\r\n",
             (self.memory.total as f32 / BYTES_PER_GB as f32)
-        )
-        .unwrap();
+        );
+        content.push_str(&total);
+
         let percentage = self.memory.used as f32 / self.memory.total as f32 * 100.0;
-        let mem_bar = DisplayManager::percentage_bar(self.term_data.width - 9, percentage);
-        write!(content, "Used: {}\n", mem_bar).unwrap();
+        let mem_bar = DisplayManager::percentage_bar(self.term_data.width - 10, percentage);
+        let mem_bar_str = format!(" Used: {}\r\n", mem_bar);
+        content.push_str(&mem_bar_str);
+
         content
     }
 
