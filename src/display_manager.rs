@@ -44,13 +44,29 @@ impl DisplayManager {
                 let i = c * cpu_rows + r;
                 let text = format!("{:.2}%", self.cpu.cores[i].usage);
                 let bar = DisplayManager::percentage_bar(
-                    core_width as u16 - 7,
+                    core_width as u16 - 16,
                     self.cpu.cores[i].usage,
                     &text,
                 );
                 let cpu_num = color::cyan_text(&format!("{:>2}", i));
-                let bar_str = format!("  {:>2}{} ", cpu_num, bar);
+                let bar_str = format!("     {:>2}{}", cpu_num, bar);
                 content.push_str(&bar_str);
+
+                let temp_str = if self.cpu.cores[i].temp == 0.0 {
+                    " N/A   ".to_string()
+                } else {
+                    let temp_str = format!("{:>5.1}°C", self.cpu.cores[i].temp);
+                    if self.cpu.cores[i].temp > 90.0 {
+                        color::red_text(&temp_str)
+                    } else if self.cpu.cores[i].temp > 80.0 {
+                        color::orange_text(&temp_str)
+                    } else if self.cpu.cores[i].temp > 70.0 {
+                        color::yellow_text(&temp_str)
+                    } else {
+                        temp_str.to_string()
+                    }
+                };
+                content.push_str(&temp_str);
             }
             content.push_str("\r\n");
         }
