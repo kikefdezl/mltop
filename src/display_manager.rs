@@ -124,12 +124,12 @@ impl DisplayManager {
 
         let colored_text_width = text_width.saturating_sub(width - full_width);
         let colored_text = color_fn(&text[..colored_text_width as usize]);
-        let white_text = &text[colored_text_width as usize..];
+        let grey_text = color::gray_text(&text[colored_text_width as usize..]);
 
         s.push_str(&bar_colored);
         s.push_str(&empty);
         s.push_str(&colored_text);
-        s.push_str(&white_text);
+        s.push_str(&grey_text);
         s.push(']');
         s
     }
