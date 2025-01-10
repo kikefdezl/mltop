@@ -40,16 +40,17 @@ impl DisplayManager {
         let core_width = self.term_data.width as usize / cpu_cols;
 
         for r in 0..cpu_rows {
+            content.push_str("   ");
             for c in 0..cpu_cols {
                 let i = c * cpu_rows + r;
                 let text = format!("{:.2}%", self.cpu.cores[i].usage);
                 let bar = DisplayManager::percentage_bar(
-                    core_width as u16 - 16,
+                    core_width as u16 - 14,
                     self.cpu.cores[i].usage,
                     &text,
                 );
                 let cpu_num = color::cyan_text(&format!("{:>2}", i));
-                let bar_str = format!("     {:>2}{}", cpu_num, bar);
+                let bar_str = format!("  {:>2}{}", cpu_num, bar);
                 content.push_str(&bar_str);
 
                 let temp_str = if self.cpu.cores[i].temp == 0.0 {
