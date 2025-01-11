@@ -1,6 +1,7 @@
 use crate::color;
-use crate::cpu::Cpu;
-use crate::memory::Memory;
+use crate::devices::cpu::Cpu;
+use crate::devices::gpu::Gpu;
+use crate::devices::memory::Memory;
 use crate::terminal_data::TerminalData;
 use crate::utils;
 
@@ -12,6 +13,7 @@ const BYTES_PER_GB: u64 = 1024_u64.pow(3);
 pub struct DisplayManager {
     pub cpu: Cpu,
     pub memory: Memory,
+    pub gpu: Option<Gpu>,
     pub term_data: TerminalData,
 }
 
@@ -19,8 +21,9 @@ impl DisplayManager {
     pub fn display(&self, stdout: &mut Stdout) {
         let cpu_content = self.display_cpu();
         let memory_content = self.display_memory();
+        let gpu_content = self.display_gpu();
 
-        let content = format!("{}\r\n{}", cpu_content, memory_content);
+        let content = format!("{}\r\n{}\r\n{}", cpu_content, memory_content, gpu_content);
         write!(stdout, "{}", content).unwrap();
     }
 
@@ -133,5 +136,29 @@ impl DisplayManager {
         s.push_str(&grey_text);
         s.push(']');
         s
+    }
+
+    fn display_gpu(&self) -> String {
+        let mut content = String::new();
+        match &self.gpu {
+            None => content.push_str("No GPU found."),
+            Some(gpu) => {
+                let name = format!("Name: {}\r\n", gpu.name);
+                content.push_str(&name);
+
+                let temp = format!("Temperature: {}\r\n", gpu.temperature);
+                content.push_str(&temp);
+
+                let max_mem = format!("Max memory: {}\r\n", gpu.max_mem);
+                content.push_str(&max_mem);
+
+                let avail_mem = format!("Available memory: {}\r\n", gpu.avail_mem);
+                content.push_str(&avail_mem);
+
+                let use_perc = format!("Use %: {}\r\n", gpu.use_perc);
+                content.push_str(&use_perc);
+            }
+        }
+        content
     }
 }

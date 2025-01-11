@@ -1,6 +1,7 @@
-use cpu::Cpu;
+use devices::cpu::Cpu;
+use devices::gpu::Gpu;
+use devices::memory::Memory;
 use display_manager::DisplayManager;
-use memory::Memory;
 use std::io;
 use std::io::{stdout, Write};
 use std::time::Instant;
@@ -17,9 +18,8 @@ use std::time::Duration;
 
 mod color;
 mod config;
-mod cpu;
+mod devices;
 mod display_manager;
-mod memory;
 mod terminal_data;
 mod utils;
 
@@ -31,13 +31,18 @@ fn main() -> io::Result<()> {
 
     let mut last_tick = Instant::now() - Duration::from_secs(1);
     loop {
-        if last_tick.elapsed() >= Duration::from_secs(1) {
+        if last_tick.elapsed() >= Duration::from_millis(config::REFRESH_RATE_MILLIS) {
             let cpu = Cpu::read();
             let memory = Memory::read();
+            let gpu = match Gpu::read() {
+                Err(_) => None,
+                Ok(gpu) => Some(gpu),
+            };
             let term_data = TerminalData::get();
             let display = DisplayManager {
                 cpu,
                 memory,
+                gpu,
                 term_data,
             };
 
