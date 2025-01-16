@@ -9,6 +9,7 @@ use std::io::Stdout;
 use std::io::Write as IoWrite;
 
 const BYTES_PER_GB: u64 = 1024_u64.pow(3);
+const BYTES_PER_GB_FLOAT: f32 = BYTES_PER_GB as f32;
 
 pub struct DisplayManager<'a> {
     pub cpu: &'a Cpu,
@@ -130,7 +131,11 @@ impl DisplayManager<'_> {
                 let mem_bar = DisplayManager::percentage_bar(
                     total_width / 3 - 5,
                     mem_perc,
-                    &format!("{:.2}Gi/{:.2}Gi", (*used as f32) / 1000000000.0, (gpu.max_memory as f32) / 1000000000.0),
+                    &format!(
+                        "{:.2}Gi/{:.2}Gi",
+                        (*used as f32) / BYTES_PER_GB_FLOAT,
+                        (gpu.max_memory as f32) / BYTES_PER_GB_FLOAT
+                    ),
                 );
                 let mem_perc = format!(" {}{}\r\n", color::cyan_text("MEM"), mem_bar);
                 content.push_str(&mem_perc);
