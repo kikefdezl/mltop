@@ -10,14 +10,14 @@ use std::io::Write as IoWrite;
 
 const BYTES_PER_GB: u64 = 1024_u64.pow(3);
 
-pub struct DisplayManager {
-    pub cpu: Cpu,
-    pub memory: Memory,
-    pub gpu: Option<Gpu>,
-    pub term_data: TerminalData,
+pub struct DisplayManager<'a> {
+    pub cpu: &'a Cpu,
+    pub memory: &'a Memory,
+    pub gpu: &'a Option<Gpu>,
+    pub term_data: &'a TerminalData,
 }
 
-impl DisplayManager {
+impl DisplayManager<'_> {
     pub fn display(&self, stdout: &mut Stdout) {
         let cpu_content = self.display_cpu();
         let memory_content = self.display_memory();
@@ -103,6 +103,43 @@ impl DisplayManager {
         content
     }
 
+    fn display_gpu(&self) -> String {
+        let mut content = String::new();
+        match &self.gpu {
+            None => content.push_str("No GPU found."),
+            Some(gpu) => {
+                let name = format!(" {} {}", color::cyan_text("Device 0:"), gpu.name);
+                content.push_str(&name);
+
+                let temp = format!(" {} {}°C\r\n", color::cyan_text("TEMP:"), gpu.temperature);
+                content.push_str(&temp);
+
+                let total_width = self.term_data.width;
+
+                let utilization = gpu.utilization.last().unwrap();
+                let use_bar = DisplayManager::percentage_bar(
+                    total_width / 3 - 5,
+                    *utilization as f32,
+                    &format!("{}%", utilization),
+                );
+                let use_perc = format!(" {}{}", color::cyan_text("GPU"), use_bar);
+                content.push_str(&use_perc);
+
+                let used = gpu.used_memory.last().unwrap();
+                let mem_perc: f32 = (*used as f32 / gpu.max_memory as f32) * 100.0;
+                let mem_bar = DisplayManager::percentage_bar(
+                    total_width / 3 - 5,
+                    mem_perc,
+                    &format!("{:.2}Gi/{:.2}Gi", (*used as f32) / 1000000000.0, (gpu.max_memory as f32) / 1000000000.0),
+                );
+                let mem_perc = format!(" {}{}\r\n", color::cyan_text("MEM"), mem_bar);
+                content.push_str(&mem_perc);
+            }
+        }
+        content
+    }
+
+    // TODO: Use generics here
     fn percentage_bar(width: u16, perc: f32, text: &str) -> String {
         let mut s = String::from("[");
 
@@ -136,29 +173,5 @@ impl DisplayManager {
         s.push_str(&grey_text);
         s.push(']');
         s
-    }
-
-    fn display_gpu(&self) -> String {
-        let mut content = String::new();
-        match &self.gpu {
-            None => content.push_str("No GPU found."),
-            Some(gpu) => {
-                let name = format!("Name: {}\r\n", gpu.name);
-                content.push_str(&name);
-
-                let temp = format!("Temperature: {}\r\n", gpu.temperature);
-                content.push_str(&temp);
-
-                let max_mem = format!("Max memory: {}\r\n", gpu.max_mem);
-                content.push_str(&max_mem);
-
-                let avail_mem = format!("Available memory: {}\r\n", gpu.avail_mem);
-                content.push_str(&avail_mem);
-
-                let use_perc = format!("Use %: {}\r\n", gpu.use_perc);
-                content.push_str(&use_perc);
-            }
-        }
-        content
     }
 }

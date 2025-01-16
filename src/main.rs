@@ -29,21 +29,28 @@ fn main() -> io::Result<()> {
     execute!(stdout, EnterAlternateScreen)?;
     terminal::enable_raw_mode()?;
 
-    let mut last_tick = Instant::now() - Duration::from_secs(1);
+    let mut gpu = match Gpu::read() {
+        Err(_) => None,
+        Ok(gpu) => Some(gpu),
+    };
+
+    let mut last_tick = Instant::now() - Duration::from_secs(2);
     loop {
         if last_tick.elapsed() >= Duration::from_millis(config::REFRESH_RATE_MILLIS) {
             let cpu = Cpu::read();
             let memory = Memory::read();
-            let gpu = match Gpu::read() {
-                Err(_) => None,
-                Ok(gpu) => Some(gpu),
-            };
             let term_data = TerminalData::get();
+
+            match &mut gpu {
+                None => {}
+                Some(gpu) => gpu.update(),
+            }
+
             let display = DisplayManager {
-                cpu,
-                memory,
-                gpu,
-                term_data,
+                cpu: &cpu,
+                memory: &memory,
+                gpu: &gpu,
+                term_data: &term_data,
             };
 
             execute!(

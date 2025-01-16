@@ -1,13 +1,13 @@
 use nvml_wrapper::{error::NvmlError, Nvml};
 
-use nvml_wrapper::enum_wrappers::device::{Clock, TemperatureSensor};
+use nvml_wrapper::enum_wrappers::device::TemperatureSensor;
 
 pub struct Gpu {
     pub name: String,
     pub temperature: u32,
-    pub max_mem: u64,
-    pub avail_mem: u64,
-    pub use_perc: f32,
+    pub max_memory: u64,
+    pub used_memory: Vec<u64>,
+    pub utilization: Vec<u32>,
 }
 
 impl Gpu {
@@ -16,18 +16,35 @@ impl Gpu {
 
         let device = nvml.device_by_index(0)?;
 
-        let temperature = device.temperature(TemperatureSensor::Gpu)?;
-        // let brand = device.brand()?; // GeForce on my system
-        // let fan_speed = device.fan_speed(0)?; // Currently 17% on my system
-        // let power_limit = device.enforced_power_limit()?; // 275k milliwatts on my system
-        // let encoder_util = device.encoder_utilization()?; // Currently 0 on my system; Not encoding anything
         let memory_info = device.memory_info()?;
         Ok(Gpu {
             name: device.name()?,
-            temperature,
-            max_mem: memory_info.total,
-            avail_mem: memory_info.free,
-            use_perc: 0.5,
+            temperature: device.temperature(TemperatureSensor::Gpu)?,
+            max_memory: memory_info.total,
+            used_memory: vec![memory_info.used],
+            utilization: vec![device.utilization_rates()?.gpu],
         })
+    }
+
+    pub fn update(&mut self) {
+        let nvml = match Nvml::init() {
+            Err(_) => return,
+            Ok(nvml) => nvml,
+        };
+        let device = match nvml.device_by_index(0) {
+            Err(_) => return,
+            Ok(device) => device,
+        };
+        let memory_info = match device.memory_info() {
+            Err(_) => return,
+            Ok(memory_info) => memory_info,
+        };
+        let utilization = match device.utilization_rates() {
+            Err(_) => return,
+            Ok(rates) => rates.gpu,
+        };
+
+        self.used_memory.push(memory_info.used);
+        self.utilization.push(utilization);
     }
 }
