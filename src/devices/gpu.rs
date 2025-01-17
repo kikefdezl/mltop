@@ -5,9 +5,14 @@ use nvml_wrapper::enum_wrappers::device::TemperatureSensor;
 pub struct Gpu {
     pub name: String,
     pub temperature: u32,
+
     pub max_memory: u64,
     pub used_memory: Vec<u64>,
+
     pub utilization: Vec<u32>,
+
+    pub max_power: u32,
+    pub power_usage: u32,
 }
 
 impl Gpu {
@@ -23,6 +28,8 @@ impl Gpu {
             max_memory: memory_info.total,
             used_memory: vec![memory_info.used],
             utilization: vec![device.utilization_rates()?.gpu],
+            max_power: device.power_management_limit()?,
+            power_usage: device.power_usage()?,
         })
     }
 

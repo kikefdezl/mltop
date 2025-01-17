@@ -2,6 +2,7 @@ use crate::color;
 use crate::devices::cpu::Cpu;
 use crate::devices::gpu::Gpu;
 use crate::devices::memory::Memory;
+use crate::processes::Processes;
 use crate::terminal_data::TerminalData;
 use crate::utils;
 
@@ -15,6 +16,7 @@ pub struct DisplayManager<'a> {
     pub cpu: &'a Cpu,
     pub memory: &'a Memory,
     pub gpu: &'a Option<Gpu>,
+    pub processes: &'a Option<Processes>,
     pub term_data: &'a TerminalData,
 }
 
@@ -23,8 +25,12 @@ impl DisplayManager<'_> {
         let cpu_content = self.display_cpu();
         let memory_content = self.display_memory();
         let gpu_content = self.display_gpu();
+        let processes_content = self.display_processes();
 
-        let content = format!("{}\r\n{}\r\n{}", cpu_content, memory_content, gpu_content);
+        let content = format!(
+            "{}\r\n{}\r\n{}\r\n{}",
+            cpu_content, memory_content, gpu_content, processes_content
+        );
         write!(stdout, "{}", content).unwrap();
     }
 
@@ -112,7 +118,15 @@ impl DisplayManager<'_> {
                 let name = format!(" {} {}", color::cyan_text("Device 0:"), gpu.name);
                 content.push_str(&name);
 
-                let temp = format!(" {} {}°C\r\n", color::cyan_text("TEMP:"), gpu.temperature);
+                let temp = format!(" {} {}°C", color::cyan_text("TEMP:"), gpu.temperature);
+                content.push_str(&temp);
+
+                let temp = format!(
+                    " {} {} W / {} W\r\n",
+                    color::cyan_text("POW:"),
+                    gpu.power_usage / 1000,
+                    gpu.max_power / 1000
+                );
                 content.push_str(&temp);
 
                 let total_width = self.term_data.width;
@@ -144,7 +158,17 @@ impl DisplayManager<'_> {
         content
     }
 
-    // TODO: Use generics here
+    fn display_processes(&self) -> String {
+        let mut content = String::from("   pid  type\r\n");
+        if let Some(processes) = self.processes {
+            for process in processes.iter() {
+                let text = format!("  {}  {}\r\n", process.pid, process.type_);
+                content.push_str(&text);
+            }
+        }
+        content
+    }
+
     fn percentage_bar(width: u16, perc: f32, text: &str) -> String {
         let mut s = String::from("[");
 
