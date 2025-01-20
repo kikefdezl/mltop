@@ -6,6 +6,10 @@ pub fn yellow_text(input: &str) -> String {
     format!("\x1b[33m{}\x1b[0m", input)
 }
 
+pub fn purple_text(input: &str) -> String {
+    format!("\x1b[35m{}\x1b[0m", input)
+}
+
 pub fn cyan_text(input: &str) -> String {
     format!("\x1b[36m{}\x1b[0m", input)
 }

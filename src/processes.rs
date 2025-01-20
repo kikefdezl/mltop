@@ -1,19 +1,9 @@
 use nvml_wrapper::{error::NvmlError, Nvml};
-use std::fmt;
-use sysinfo::{Components, CpuRefreshKind, Pid, RefreshKind, System};
+use sysinfo::{Pid, System};
 
 pub enum GpuProcessType {
     GRAPHIC,
     COMPUTE,
-}
-
-impl fmt::Display for GpuProcessType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            GpuProcessType::GRAPHIC => write!(f, "GRAPHIC"),
-            GpuProcessType::COMPUTE => write!(f, "COMPUTE"),
-        }
-    }
 }
 
 pub struct Process {
@@ -28,7 +18,7 @@ impl Processes {
     pub fn read() -> Result<Processes, NvmlError> {
         let nvml = Nvml::init()?;
 
-        // TODO: be more specific
+        // TODO: be more specific with initialization
         let mut sys = System::new_all();
         sys.refresh_all();
 

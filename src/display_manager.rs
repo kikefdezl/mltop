@@ -2,6 +2,7 @@ use crate::color;
 use crate::devices::cpu::Cpu;
 use crate::devices::gpu::Gpu;
 use crate::devices::memory::Memory;
+use crate::processes::GpuProcessType;
 use crate::processes::Processes;
 use crate::terminal_data::TerminalData;
 use crate::utils;
@@ -167,10 +168,14 @@ impl DisplayManager<'_> {
         let mut content = String::from(color::green_background(&text));
         if let Some(processes) = self.processes {
             for process in processes.iter() {
+                let type_ = match process.type_ {
+                    GpuProcessType::GRAPHIC => "GRAPHIC".to_string(),
+                    GpuProcessType::COMPUTE => color::purple_text("COMPUTE"),
+                };
                 let text = format!(
                     " {:>5}  {}  {}\r\n",
                     process.pid.to_string(),
-                    process.type_,
+                    type_,
                     process.command
                 );
                 content.push_str(&text);
