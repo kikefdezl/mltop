@@ -17,3 +17,9 @@ pub fn orange_text(input: &str) -> String {
 pub fn gray_text(input: &str) -> String {
     format!("\x1b[90m{}\x1b[0m", input)
 }
+
+pub fn green_background(input: &str) -> String {
+    format!("\x1b[42;30m{}\x1b[0m", input)
+}
+
+

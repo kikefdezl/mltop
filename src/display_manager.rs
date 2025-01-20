@@ -159,10 +159,20 @@ impl DisplayManager<'_> {
     }
 
     fn display_processes(&self) -> String {
-        let mut content = String::from("   pid  type\r\n");
+        let text = format!(
+            "   pid  type     {:<width$}\r\n",
+            "Command",
+            width = self.term_data.width as usize - 17
+        );
+        let mut content = String::from(color::green_background(&text));
         if let Some(processes) = self.processes {
             for process in processes.iter() {
-                let text = format!("  {}  {}\r\n", process.pid, process.type_);
+                let text = format!(
+                    " {:>5}  {}  {}\r\n",
+                    process.pid.to_string(),
+                    process.type_,
+                    process.command
+                );
                 content.push_str(&text);
             }
         }
