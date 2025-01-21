@@ -89,24 +89,24 @@ impl DisplayManager<'_> {
         let mut content = String::new();
 
         let percentage = self.memory.used as f32 / self.memory.total as f32 * 100.0;
-        let text = format!("{:.2}%", percentage);
+        let text = format!(
+            "{:.1}G/{:.1}G",
+            self.memory.used as f32 / BYTES_PER_GB as f32,
+            self.memory.total as f32 / BYTES_PER_GB as f32
+        );
         let mem_bar = DisplayManager::percentage_bar(self.term_data.width - 11, percentage, &text);
         let mem_bar_str = format!(" {} {}\r\n", color::cyan_text("Memory"), mem_bar);
         content.push_str(&mem_bar_str);
 
-        let used = format!(
-            " {} {:.1} GB\r\n",
-            color::cyan_text("Used:"),
-            self.memory.used as f32 / BYTES_PER_GB as f32
+        let percentage = self.memory.used_swap as f32 / self.memory.total_swap as f32 * 100.0;
+        let text = format!(
+            "{:.1}G/{:.1}G",
+            self.memory.used_swap as f32 / BYTES_PER_GB as f32,
+            self.memory.total_swap as f32 / BYTES_PER_GB as f32
         );
-        content.push_str(&used);
-
-        let total = format!(
-            " {} {:.1} GB\r\n",
-            color::cyan_text("Total:"),
-            (self.memory.total as f32 / BYTES_PER_GB as f32)
-        );
-        content.push_str(&total);
+        let swap_bar = DisplayManager::percentage_bar(self.term_data.width - 11, percentage, &text);
+        let swap_bar_str = format!(" {} {}\r\n", color::cyan_text("  Swap"), swap_bar);
+        content.push_str(&swap_bar_str);
 
         content
     }
