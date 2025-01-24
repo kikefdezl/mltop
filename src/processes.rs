@@ -26,18 +26,14 @@ impl Processes {
 
         let mut processes = Vec::new();
 
-        processes.extend(device.running_compute_processes()?.iter().map(|x| {
-            Process {
-                pid: x.pid,
-                type_: GpuProcessType::COMPUTE,
-                command: String::from(
-                    sys.process(Pid::from(x.pid as usize))
-                        .unwrap()
-                        .exe()
-                        .unwrap()
-                        .to_str()
-                        .unwrap(),
-                ),
+        processes.extend(device.running_compute_processes()?.iter().filter_map(|x| {
+            match sys.process(Pid::from(x.pid as usize)).unwrap().exe() {
+                None => None,
+                Some(exe) => Some(Process {
+                    pid: x.pid,
+                    type_: GpuProcessType::COMPUTE,
+                    command: String::from(exe.to_str().unwrap()),
+                }),
             }
         }));
         processes.extend(device.running_graphics_processes()?.iter().map(|x| {
