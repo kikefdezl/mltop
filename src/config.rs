@@ -1,1 +1,1 @@
-pub const REFRESH_RATE_MILLIS: u64 = 500;
+pub const REFRESH_RATE_MILLIS: u64 = 1500;

@@ -1,6 +1,9 @@
 use crate::color;
-use crate::cpu::Cpu;
-use crate::memory::Memory;
+use crate::devices::cpu::Cpu;
+use crate::devices::gpu::Gpu;
+use crate::devices::memory::Memory;
+use crate::processes::GpuProcessType;
+use crate::processes::Processes;
 use crate::terminal_data::TerminalData;
 use crate::utils;
 
@@ -8,19 +11,27 @@ use std::io::Stdout;
 use std::io::Write as IoWrite;
 
 const BYTES_PER_GB: u64 = 1024_u64.pow(3);
+const BYTES_PER_GB_FLOAT: f32 = BYTES_PER_GB as f32;
 
-pub struct DisplayManager {
-    pub cpu: Cpu,
-    pub memory: Memory,
-    pub term_data: TerminalData,
+pub struct DisplayManager<'a> {
+    pub cpu: &'a Cpu,
+    pub memory: &'a Memory,
+    pub gpu: &'a Option<Gpu>,
+    pub processes: &'a Option<Processes>,
+    pub term_data: &'a TerminalData,
 }
 
-impl DisplayManager {
+impl DisplayManager<'_> {
     pub fn display(&self, stdout: &mut Stdout) {
         let cpu_content = self.display_cpu();
         let memory_content = self.display_memory();
+        let gpu_content = self.display_gpu();
+        let processes_content = self.display_processes();
 
-        let content = format!("{}\r\n{}", cpu_content, memory_content);
+        let content = format!(
+            "{}\r\n{}\r\n{}\r\n{}",
+            cpu_content, memory_content, gpu_content, processes_content
+        );
         write!(stdout, "{}", content).unwrap();
     }
 
@@ -78,25 +89,98 @@ impl DisplayManager {
         let mut content = String::new();
 
         let percentage = self.memory.used as f32 / self.memory.total as f32 * 100.0;
-        let text = format!("{:.2}%", percentage);
+        let text = format!(
+            "{:.1}G/{:.1}G",
+            self.memory.used as f32 / BYTES_PER_GB as f32,
+            self.memory.total as f32 / BYTES_PER_GB as f32
+        );
         let mem_bar = DisplayManager::percentage_bar(self.term_data.width - 11, percentage, &text);
         let mem_bar_str = format!(" {} {}\r\n", color::cyan_text("Memory"), mem_bar);
         content.push_str(&mem_bar_str);
 
-        let used = format!(
-            " {} {:.1} GB\r\n",
-            color::cyan_text("Used:"),
-            self.memory.used as f32 / BYTES_PER_GB as f32
+        let percentage = self.memory.used_swap as f32 / self.memory.total_swap as f32 * 100.0;
+        let text = format!(
+            "{:.1}G/{:.1}G",
+            self.memory.used_swap as f32 / BYTES_PER_GB as f32,
+            self.memory.total_swap as f32 / BYTES_PER_GB as f32
         );
-        content.push_str(&used);
+        let swap_bar = DisplayManager::percentage_bar(self.term_data.width - 11, percentage, &text);
+        let swap_bar_str = format!(" {} {}\r\n", color::cyan_text("  Swap"), swap_bar);
+        content.push_str(&swap_bar_str);
 
-        let total = format!(
-            " {} {:.1} GB\r\n",
-            color::cyan_text("Total:"),
-            (self.memory.total as f32 / BYTES_PER_GB as f32)
+        content
+    }
+
+    fn display_gpu(&self) -> String {
+        let mut content = String::new();
+        match &self.gpu {
+            None => content.push_str("No GPU found."),
+            Some(gpu) => {
+                let name = format!(" {} {}", color::cyan_text("Device 0:"), gpu.name);
+                content.push_str(&name);
+
+                let temp = format!(" {} {}°C", color::cyan_text("TEMP:"), gpu.temperature);
+                content.push_str(&temp);
+
+                let temp = format!(
+                    " {} {} W / {} W\r\n",
+                    color::cyan_text("POW:"),
+                    gpu.power_usage / 1000,
+                    gpu.max_power / 1000
+                );
+                content.push_str(&temp);
+
+                let total_width = self.term_data.width;
+
+                let utilization = gpu.utilization.last().unwrap();
+                let use_bar = DisplayManager::percentage_bar(
+                    total_width / 3 - 5,
+                    *utilization as f32,
+                    &format!("{}%", utilization),
+                );
+                let use_perc = format!(" {}{}", color::cyan_text("GPU"), use_bar);
+                content.push_str(&use_perc);
+
+                let used = gpu.used_memory.last().unwrap();
+                let mem_perc: f32 = (*used as f32 / gpu.max_memory as f32) * 100.0;
+                let mem_bar = DisplayManager::percentage_bar(
+                    total_width / 3 - 5,
+                    mem_perc,
+                    &format!(
+                        "{:.2}Gi/{:.2}Gi",
+                        (*used as f32) / BYTES_PER_GB_FLOAT,
+                        (gpu.max_memory as f32) / BYTES_PER_GB_FLOAT
+                    ),
+                );
+                let mem_perc = format!(" {}{}\r\n", color::cyan_text("MEM"), mem_bar);
+                content.push_str(&mem_perc);
+            }
+        }
+        content
+    }
+
+    fn display_processes(&self) -> String {
+        let text = format!(
+            "   pid  type     {:<width$}\r\n",
+            "Command",
+            width = self.term_data.width as usize - 17
         );
-        content.push_str(&total);
-
+        let mut content = String::from(color::green_background(&text));
+        if let Some(processes) = self.processes {
+            for process in processes.iter() {
+                let type_ = match process.type_ {
+                    GpuProcessType::GRAPHIC => "GRAPHIC".to_string(),
+                    GpuProcessType::COMPUTE => color::purple_text("COMPUTE"),
+                };
+                let text = format!(
+                    " {:>5}  {}  {}\r\n",
+                    process.pid.to_string(),
+                    type_,
+                    process.command
+                );
+                content.push_str(&text);
+            }
+        }
         content
     }
 

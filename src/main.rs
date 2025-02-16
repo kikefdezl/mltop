@@ -1,6 +1,8 @@
-use cpu::Cpu;
+use devices::cpu::Cpu;
+use devices::gpu::Gpu;
+use devices::memory::Memory;
 use display_manager::DisplayManager;
-use memory::Memory;
+use processes::Processes;
 use std::io;
 use std::io::{stdout, Write};
 use std::time::Instant;
@@ -17,9 +19,9 @@ use std::time::Duration;
 
 mod color;
 mod config;
-mod cpu;
+mod devices;
 mod display_manager;
-mod memory;
+mod processes;
 mod terminal_data;
 mod utils;
 
@@ -29,16 +31,33 @@ fn main() -> io::Result<()> {
     execute!(stdout, EnterAlternateScreen)?;
     terminal::enable_raw_mode()?;
 
-    let mut last_tick = Instant::now() - Duration::from_secs(1);
+    let mut gpu = match Gpu::read() {
+        Err(_) => None,
+        Ok(gpu) => Some(gpu),
+    };
+
+    let mut last_tick = Instant::now() - Duration::from_secs(2);
     loop {
-        if last_tick.elapsed() >= Duration::from_secs(1) {
+        if last_tick.elapsed() >= Duration::from_millis(config::REFRESH_RATE_MILLIS) {
             let cpu = Cpu::read();
             let memory = Memory::read();
+            let processes = match Processes::read() {
+                Err(_) => None,
+                Ok(processes) => Some(processes),
+            };
             let term_data = TerminalData::get();
+
+            match &mut gpu {
+                None => {}
+                Some(gpu) => gpu.update(),
+            }
+
             let display = DisplayManager {
-                cpu,
-                memory,
-                term_data,
+                cpu: &cpu,
+                memory: &memory,
+                gpu: &gpu,
+                processes: &processes,
+                term_data: &term_data,
             };
 
             execute!(

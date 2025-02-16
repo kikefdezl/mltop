@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 crossterm = "0.28.1"
+nvml-wrapper = "0.10.0"
 sysinfo = { version = "0.30.12", default-features = false }
 terminal_size = "0.4.0"
