@@ -1,18 +1,32 @@
 use nvml_wrapper::{error::NvmlError, Nvml};
+use std::slice::Iter;
+use std::vec::IntoIter;
 use sysinfo::{Pid, System};
 
+#[derive(Clone)]
 pub enum GpuProcessType {
     GRAPHIC,
     COMPUTE,
 }
 
+impl ToString for GpuProcessType {
+    fn to_string(&self) -> String {
+        match self {
+            GpuProcessType::GRAPHIC => "GRAPHIC".to_string(),
+            GpuProcessType::COMPUTE => "COMPUTE".to_string(),
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct Process {
     pub pid: u32,
     pub type_: GpuProcessType,
     pub command: String,
 }
 
-pub struct Processes(Vec<Process>);
+#[derive(Clone)]
+pub struct Processes(pub Vec<Process>);
 
 impl Processes {
     pub fn read() -> Result<Processes, NvmlError> {
@@ -53,7 +67,15 @@ impl Processes {
         Ok(Processes(processes))
     }
 
-    pub fn iter(&self) -> std::slice::Iter<Process> {
+    pub fn into_iter(&self) -> IntoIter<Process> {
+        self.0.clone().into_iter()
+    }
+
+    pub fn iter(&self) -> Iter<Process> {
         self.0.iter()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
