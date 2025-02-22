@@ -6,11 +6,11 @@ use ratatui::{
 pub fn percentage_bar<'a>(width: u16, perc: f32, text: &str) -> Vec<Span<'a>> {
     let mut spans = vec![Span::raw("[".to_string())];
 
-    let color: Color = if perc > 80.0 {
+    let color: Color = if perc > 90.0 {
         Color::Red
-    } else if perc > 50.0 {
+    } else if perc > 70.0 {
         Color::Rgb(255, 130, 0) // orange
-    } else if perc > 20.0 {
+    } else if perc > 40.0 {
         Color::Yellow
     } else {
         Color::White

@@ -6,9 +6,9 @@ use nvml_wrapper::Nvml;
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
 
 pub struct AppData {
-    pub cpu: Vec<Cpu>,
+    pub cpu: Cpu,
     pub memory: Memory,
-    pub gpu: Option<Vec<Gpu>>,
+    pub gpu: Option<Gpu>,
     pub processes: Processes,
     sys: System,
     nvml: Option<Nvml>,
@@ -22,18 +22,26 @@ impl AppData {
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         sys.refresh_all();
 
+        let mut cpu = Cpu::new();
+        cpu.update(&sys);
+
         let nvml = match Nvml::init() {
             Ok(n) => Some(n),
             Err(_) => None,
         };
 
+        let gpu = match Gpu::new(&nvml) {
+            Err(_) => None,
+            Ok(mut g) => {
+                g.update(&nvml);
+                Some(g)
+            }
+        };
+
         AppData {
-            cpu: vec![Cpu::read(&sys)],
+            cpu,
             memory: Memory::read(&sys),
-            gpu: match Gpu::read(&nvml) {
-                Ok(g) => Some(vec![g]),
-                Err(_) => None,
-            },
+            gpu,
             processes: match Processes::read(&sys, &nvml) {
                 Ok(p) => p,
                 Err(_) => Processes(Vec::new()),
@@ -47,14 +55,11 @@ impl AppData {
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         self.sys.refresh_all();
 
-        self.cpu.push(Cpu::read(&self.sys));
+        self.cpu.update(&self.sys);
         self.memory = Memory::read(&self.sys);
 
-        if self.gpu.is_some() {
-            match Gpu::read(&self.nvml) {
-                Ok(g) => self.gpu.as_mut().unwrap().push(g),
-                Err(_) => {}
-            }
+        if let Some(gpu) = self.gpu.as_mut() {
+            gpu.update(&self.nvml);
         }
 
         self.processes = match Processes::read(&self.sys, &self.nvml) {

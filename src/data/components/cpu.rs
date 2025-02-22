@@ -10,12 +10,19 @@ pub struct Core {
 
 #[derive(Clone)]
 pub struct Cpu {
-    pub usage: f32, // as a value between 0.0 and 100.0
+    pub usage: Vec<f32>, // as a value between 0.0 and 100.0
     pub cores: Vec<Core>,
 }
 
 impl Cpu {
-    pub fn read(sys: &System) -> Cpu {
+    pub fn new() -> Cpu {
+        Cpu {
+            usage: vec![],
+            cores: vec![],
+        }
+    }
+
+    pub fn update(&mut self, sys: &System) {
         let mut cores: Vec<Core> = Vec::new();
 
         // TODO: Fix temperature mismatched for all cores. Have to find a more robust way
@@ -48,7 +55,7 @@ impl Cpu {
         }
 
         let usage = sys.global_cpu_info().cpu_usage();
-        let cpu = Cpu { usage, cores };
-        cpu
+        self.usage.push(usage);
+        self.cores = cores;
     }
 }

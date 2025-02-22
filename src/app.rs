@@ -4,6 +4,7 @@ use crate::config::REFRESH_RATE_MILLIS;
 use crate::data::data::AppData;
 use crate::widgets::cpu::CpuWidget;
 use crate::widgets::gpu::GpuWidget;
+use crate::widgets::line_graph::LineGraphWidget;
 use crate::widgets::memory::MemoryWidget;
 use crate::widgets::processes::ProcessesWidget;
 use crossterm::event::{self, poll, Event, KeyCode, KeyEvent, KeyEventKind};
@@ -64,8 +65,9 @@ impl App {
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![
-                Constraint::Length(4),
+                Constraint::Max(5),
                 Constraint::Length(2),
+                Constraint::Length(20),
                 Constraint::Length(4),
                 Constraint::Min(1),
             ])
@@ -77,11 +79,14 @@ impl App {
         let memory_widget = MemoryWidget::new(self.data.memory.clone());
         frame.render_widget(memory_widget, layout[1]);
 
+        let line_graph_widget = LineGraphWidget::new(self.data.cpu.clone(), self.data.gpu.clone());
+        frame.render_widget(line_graph_widget, layout[2]);
+
         let gpu_widget = GpuWidget::new(self.data.gpu.clone());
-        frame.render_widget(gpu_widget, layout[2]);
+        frame.render_widget(gpu_widget, layout[3]);
 
         let processes_widget = ProcessesWidget::new(self.data.processes.clone());
-        frame.render_widget(processes_widget, layout[3]);
+        frame.render_widget(processes_widget, layout[4]);
     }
     fn exit(&mut self) {
         self.exit = true;
