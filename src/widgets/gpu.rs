@@ -22,29 +22,34 @@ impl GpuWidget {
 
 impl Widget for GpuWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let block = Block::bordered()
-            .border_type(BorderType::Rounded)
-            .padding(Padding::new(1, 1, 0, 0));
         match &self.data {
             None => {
+                let block = Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .padding(Padding::new(1, 1, 0, 0));
                 Paragraph::new(Text::from("No GPU found."))
                     .centered()
                     .block(block)
                     .render(area, buf);
             }
             Some(gpu) => {
-                let mut spans = vec![Span::styled("Device 0: ", Style::default().fg(Color::Cyan))];
-                spans.push(Span::raw(gpu.name.clone()));
+                let block = Block::bordered()
+                    .title(format!(" {}", gpu.name.clone()))
+                    .border_type(BorderType::Rounded)
+                    .padding(Padding::new(1, 1, 0, 0));
 
-                spans.push(Span::styled(" TEMP:", Style::default().fg(Color::Cyan)));
+                let mut spans = vec![Span::styled("TEMP:", Style::default().fg(Color::Cyan))];
                 spans.push(Span::raw(format!(" {}°C", gpu.temperature)));
 
-                spans.push(Span::styled(" POW:", Style::default().fg(Color::Cyan)));
+                spans.push(Span::styled("   POW:", Style::default().fg(Color::Cyan)));
                 spans.push(Span::raw(format!(
                     " {} W / {} W",
                     gpu.power_usage / 1000,
                     gpu.max_power / 1000
                 )));
+
+                spans.push(Span::styled("   FAN:", Style::default().fg(Color::Cyan)));
+                spans.push(Span::raw(format!("  {:.0}%", gpu.fan_speed)));
 
                 let mut lines = vec![Line::from(spans).alignment(Alignment::Left)];
 

@@ -22,18 +22,26 @@ impl AppData {
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         sys.refresh_all();
 
+        let mut cpu = Cpu::new();
+        cpu.update(&sys);
+
         let nvml = match Nvml::init() {
             Ok(n) => Some(n),
             Err(_) => None,
         };
 
+        let gpu = match Gpu::new(&nvml) {
+            Err(_) => None,
+            Ok(mut g) => {
+                g.update(&nvml);
+                Some(g)
+            }
+        };
+
         AppData {
-            cpu: Cpu::read(&sys),
+            cpu,
             memory: Memory::read(&sys),
-            gpu: match Gpu::read() {
-                Ok(g) => Some(g),
-                Err(_) => None,
-            },
+            gpu,
             processes: match Processes::read(&sys, &nvml) {
                 Ok(p) => p,
                 Err(_) => Processes(Vec::new()),
@@ -47,14 +55,11 @@ impl AppData {
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         self.sys.refresh_all();
 
-        self.cpu = Cpu::read(&self.sys);
+        self.cpu.update(&self.sys);
         self.memory = Memory::read(&self.sys);
-        if let Some(gpu) = &mut self.gpu {
-            gpu.update();
-        }
 
-        if let Some(gpu) = &mut self.gpu {
-            gpu.update();
+        if let Some(gpu) = self.gpu.as_mut() {
+            gpu.update(&self.nvml);
         }
 
         self.processes = match Processes::read(&self.sys, &self.nvml) {

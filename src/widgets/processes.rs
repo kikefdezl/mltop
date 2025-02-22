@@ -20,7 +20,7 @@ impl ProcessesWidget {
 
 impl Widget for ProcessesWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let header_style = Style::default().fg(Color::Black).bg(Color::LightGreen);
+        let header_style = Style::default().fg(Color::Black).bg(Color::Rgb(255, 192, 103));
 
         let header = ["   pid", "type", "Command"]
             .into_iter()
@@ -44,7 +44,6 @@ impl Widget for ProcessesWidget {
         Table::new(
             rows,
             [
-                // + 1 is for padding.
                 Constraint::Length(6),
                 Constraint::Length(8),
                 Constraint::Min(10),
