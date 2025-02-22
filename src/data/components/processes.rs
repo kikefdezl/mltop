@@ -1,5 +1,4 @@
 use nvml_wrapper::{error::NvmlError, Nvml};
-use std::slice::Iter;
 use std::vec::IntoIter;
 use sysinfo::{Pid, System};
 
@@ -29,13 +28,12 @@ pub struct Process {
 pub struct Processes(pub Vec<Process>);
 
 impl Processes {
-    pub fn read() -> Result<Processes, NvmlError> {
-        let nvml = Nvml::init()?;
+    pub fn read(sys: &System, nvml: &Option<Nvml>) -> Result<Processes, NvmlError> {
+        if nvml.is_none() {
+            return Ok(Processes(Vec::new()));
+        }
 
-        // TODO: be more specific with initialization
-        let mut sys = System::new_all();
-        sys.refresh_all();
-
+        let nvml = nvml.as_ref().unwrap();
         let device = nvml.device_by_index(0)?;
 
         let mut processes = Vec::new();
@@ -69,13 +67,5 @@ impl Processes {
 
     pub fn into_iter(&self) -> IntoIter<Process> {
         self.0.clone().into_iter()
-    }
-
-    pub fn iter(&self) -> Iter<Process> {
-        self.0.iter()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
     }
 }
