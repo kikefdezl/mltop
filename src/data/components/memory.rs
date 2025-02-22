@@ -1,5 +1,6 @@
 use sysinfo::System;
 
+#[derive(Clone)]
 pub struct Memory {
     pub used: u64,
     pub total: u64,
