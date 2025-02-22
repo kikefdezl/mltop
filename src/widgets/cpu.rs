@@ -11,11 +11,11 @@ use ratatui::{
 };
 
 pub struct CpuWidget {
-    data: Cpu,
+    data: Vec<Cpu>,
 }
 
 impl CpuWidget {
-    pub fn new(data: Cpu) -> CpuWidget {
+    pub fn new(data: Vec<Cpu>) -> CpuWidget {
         CpuWidget { data }
     }
 }
@@ -24,13 +24,15 @@ impl Widget for CpuWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut spans = vec![Span::styled("Total ", Style::default().fg(Color::Cyan))];
 
-        let text = format!("{:.2}%", self.data.usage);
-        let total_bar = percentage_bar(area.width - 10, self.data.usage, &text);
+        let cpu = self.data.last().unwrap();
+
+        let text = format!("{:.2}%", cpu.usage);
+        let total_bar = percentage_bar(area.width - 10, cpu.usage, &text);
         spans.extend(total_bar);
 
         let mut lines = vec![Line::from(spans)];
 
-        let num_cpus = self.data.cores.len();
+        let num_cpus = cpu.cores.len();
         let cpu_rows = fast_int_sqrt(num_cpus);
         let mut cpu_cols = 0;
         while cpu_cols * cpu_rows < num_cpus {
@@ -49,19 +51,19 @@ impl Widget for CpuWidget {
                     Style::default().fg(Color::Cyan),
                 )); // cpu number
 
-                let text = format!("{:.2}%", &self.data.cores[i].usage);
-                let bar = percentage_bar(core_width as u16 - 14, self.data.cores[i].usage, &text);
+                let text = format!("{:.2}%", cpu.cores[i].usage);
+                let bar = percentage_bar(core_width as u16 - 14, cpu.cores[i].usage, &text);
                 spans.extend(bar);
 
-                let (temp_str, color) = if self.data.cores[i].temp == 0.0 {
+                let (temp_str, color) = if cpu.cores[i].temp == 0.0 {
                     (" N/A   ".to_string(), Color::White)
                 } else {
-                    let temp_str = format!("{:>5.1}°C", self.data.cores[i].temp);
-                    if self.data.cores[i].temp > 90.0 {
+                    let temp_str = format!("{:>5.1}°C", cpu.cores[i].temp);
+                    if cpu.cores[i].temp > 90.0 {
                         (temp_str, Color::Red)
-                    } else if self.data.cores[i].temp > 80.0 {
+                    } else if cpu.cores[i].temp > 80.0 {
                         (temp_str, Color::Rgb(255, 130, 0)) // orange
-                    } else if self.data.cores[i].temp > 70.0 {
+                    } else if cpu.cores[i].temp > 70.0 {
                         (temp_str, Color::Yellow)
                     } else {
                         (temp_str, Color::White)

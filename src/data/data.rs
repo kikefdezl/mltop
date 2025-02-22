@@ -6,9 +6,9 @@ use nvml_wrapper::Nvml;
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
 
 pub struct AppData {
-    pub cpu: Cpu,
+    pub cpu: Vec<Cpu>,
     pub memory: Memory,
-    pub gpu: Option<Gpu>,
+    pub gpu: Option<Vec<Gpu>>,
     pub processes: Processes,
     sys: System,
     nvml: Option<Nvml>,
@@ -28,10 +28,10 @@ impl AppData {
         };
 
         AppData {
-            cpu: Cpu::read(&sys),
+            cpu: vec![Cpu::read(&sys)],
             memory: Memory::read(&sys),
-            gpu: match Gpu::read() {
-                Ok(g) => Some(g),
+            gpu: match Gpu::read(&nvml) {
+                Ok(g) => Some(vec![g]),
                 Err(_) => None,
             },
             processes: match Processes::read(&sys, &nvml) {
@@ -47,14 +47,14 @@ impl AppData {
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         self.sys.refresh_all();
 
-        self.cpu = Cpu::read(&self.sys);
+        self.cpu.push(Cpu::read(&self.sys));
         self.memory = Memory::read(&self.sys);
-        if let Some(gpu) = &mut self.gpu {
-            gpu.update();
-        }
 
-        if let Some(gpu) = &mut self.gpu {
-            gpu.update();
+        if self.gpu.is_some() {
+            match Gpu::read(&self.nvml) {
+                Ok(g) => self.gpu.as_mut().unwrap().push(g),
+                Err(_) => {}
+            }
         }
 
         self.processes = match Processes::read(&self.sys, &self.nvml) {

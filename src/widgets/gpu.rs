@@ -11,11 +11,11 @@ use ratatui::{
 };
 
 pub struct GpuWidget {
-    data: Option<Gpu>,
+    data: Option<Vec<Gpu>>,
 }
 
 impl GpuWidget {
-    pub fn new(data: Option<Gpu>) -> GpuWidget {
+    pub fn new(data: Option<Vec<Gpu>>) -> GpuWidget {
         GpuWidget { data }
     }
 }
@@ -33,6 +33,7 @@ impl Widget for GpuWidget {
                     .render(area, buf);
             }
             Some(gpu) => {
+                let gpu = gpu.last().unwrap();
                 let mut spans = vec![Span::styled("Device 0: ", Style::default().fg(Color::Cyan))];
                 spans.push(Span::raw(gpu.name.clone()));
 

@@ -17,10 +17,13 @@ pub struct Gpu {
 }
 
 impl Gpu {
-    pub fn read() -> Result<Gpu, NvmlError> {
-        let nvml = Nvml::init()?;
+    pub fn read(nvml: &Option<Nvml>) -> Result<Gpu, NvmlError> {
+        let nvml = match nvml.as_ref() {
+            Some(b) => Ok(b),
+            None => Err(NvmlError::LibraryNotFound),
+        };
 
-        let device = nvml.device_by_index(0)?;
+        let device = nvml?.device_by_index(0)?;
 
         let memory_info = device.memory_info()?;
         Ok(Gpu {

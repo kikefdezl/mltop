@@ -23,7 +23,6 @@ impl App {
     pub fn new() -> App {
         let data = AppData::new();
 
-
         App {
             data,
             exit: false,
