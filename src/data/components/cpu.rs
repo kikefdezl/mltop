@@ -1,4 +1,4 @@
-use sysinfo::{Components, CpuRefreshKind, RefreshKind, System};
+use sysinfo::{Components, System};
 
 use std::collections::HashMap;
 
@@ -15,14 +15,8 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn read() -> Cpu {
+    pub fn read(sys: &System) -> Cpu {
         let mut cores: Vec<Core> = Vec::new();
-
-        // TODO: this should only be done once to reduce cpu usage
-        let mut sys =
-            System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
-        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-        sys.refresh_cpu_usage();
 
         // TODO: Fix temperature mismatched for all cores. Have to find a more robust way
         // to find the 1:1 core temperatures.

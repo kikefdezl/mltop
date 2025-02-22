@@ -9,10 +9,7 @@ pub struct Memory {
 }
 
 impl Memory {
-    pub fn read() -> Memory {
-        // TODO: Be more specific and use a single sys for all app
-        let sys = System::new_all();
-
+    pub fn read(sys: &System) -> Memory {
         let memory = Memory {
             used: sys.used_memory(),
             total: sys.total_memory(),
