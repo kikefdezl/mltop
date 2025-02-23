@@ -22,9 +22,6 @@
 
 You can easily install **mltop** via pre-built binaries or by compiling from source.
 
-### Pre-built Binaries
-
-- Visit the releases page to download the latest precompiled binaries for your operating system.
 
 ### Building from Source
 
@@ -42,6 +39,10 @@ cd mltop
 ```bash
 cargo run --release
 ```
+
+### Pre-built Binaries
+
+- Pre-built binaries to be added to releases soon. In the meantime, please build from source using Cargo.
 
 ## Dependencies
 
