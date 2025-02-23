@@ -1,4 +1,5 @@
 use crate::data::components::processes::Processes;
+use crate::constants::BYTES_PER_MB;
 
 use ratatui::{
     buffer::Buffer,
@@ -20,9 +21,11 @@ impl ProcessesWidget {
 
 impl Widget for ProcessesWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let header_style = Style::default().fg(Color::Black).bg(Color::Rgb(255, 192, 103));
+        let header_style = Style::default()
+            .fg(Color::Black)
+            .bg(Color::White);
 
-        let header = ["   pid", "type", "Command"]
+        let header = ["   pid", "type", " CPU%", " MEM%", "      MEM", "Command"]
             .into_iter()
             .map(Cell::from)
             .collect::<Row>()
@@ -36,6 +39,17 @@ impl Widget for ProcessesWidget {
                 Row::new(vec![
                     Cell::from(Text::from(data.pid.to_string()).alignment(Alignment::Right)),
                     Cell::from(Text::from(data.type_.to_string())),
+                    Cell::from(
+                        Text::from(format!("{:.0}%", data.cpu_usage)).alignment(Alignment::Right),
+                    ),
+                    Cell::from(
+                        Text::from(format!("{:.0}%", data.memory_usage))
+                            .alignment(Alignment::Right),
+                    ),
+                    Cell::from(
+                        Text::from(format!("{:.0}MiB", data.memory / BYTES_PER_MB))
+                            .alignment(Alignment::Right),
+                    ),
                     Cell::from(Text::from(data.command)),
                 ])
             })
@@ -46,6 +60,9 @@ impl Widget for ProcessesWidget {
             [
                 Constraint::Length(6),
                 Constraint::Length(8),
+                Constraint::Length(5),
+                Constraint::Length(5),
+                Constraint::Length(9),
                 Constraint::Min(10),
             ],
         )
