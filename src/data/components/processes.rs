@@ -4,7 +4,7 @@ use sysinfo::{Pid, System};
 
 #[derive(Clone)]
 pub enum ProcessType {
-    Cpu, // TODO: Add cpu processes
+    // TODO: Add cpu processes as well
     GpuGraphic,
     GpuCompute,
 }
@@ -12,7 +12,6 @@ pub enum ProcessType {
 impl ToString for ProcessType {
     fn to_string(&self) -> String {
         match self {
-            ProcessType::Cpu => "".to_string(),
             ProcessType::GpuGraphic => "GRAPHIC".to_string(),
             ProcessType::GpuCompute => "COMPUTE".to_string(),
         }
