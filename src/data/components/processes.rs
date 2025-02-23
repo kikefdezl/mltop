@@ -4,17 +4,17 @@ use sysinfo::{Pid, System};
 
 #[derive(Clone)]
 pub enum ProcessType {
-    CPU, // TODO: Add cpu processes
-    GPU_GRAPHIC,
-    GPU_COMPUTE,
+    Cpu, // TODO: Add cpu processes
+    GpuGraphic,
+    GpuCompute,
 }
 
 impl ToString for ProcessType {
     fn to_string(&self) -> String {
         match self {
-            ProcessType::CPU => "".to_string(),
-            ProcessType::GPU_GRAPHIC => "GRAPHIC".to_string(),
-            ProcessType::GPU_COMPUTE => "COMPUTE".to_string(),
+            ProcessType::Cpu => "".to_string(),
+            ProcessType::GpuGraphic => "GRAPHIC".to_string(),
+            ProcessType::GpuCompute => "COMPUTE".to_string(),
         }
     }
 }
@@ -55,7 +55,7 @@ impl Processes {
                     let memory = p.memory();
                     Process {
                         pid: x.pid,
-                        type_: ProcessType::GPU_COMPUTE,
+                        type_: ProcessType::GpuCompute,
                         command: String::from(p.exe().unwrap().to_str().unwrap()),
                         memory,
                         memory_usage: (memory as f32 / total_memory as f32) * 100.0,
@@ -71,7 +71,7 @@ impl Processes {
                     let memory = p.memory();
                     Process {
                         pid: x.pid,
-                        type_: ProcessType::GPU_GRAPHIC,
+                        type_: ProcessType::GpuGraphic,
                         command: String::from(p.exe().unwrap().to_str().unwrap()),
                         memory,
                         memory_usage: (memory as f32 / total_memory as f32) * 100.0,

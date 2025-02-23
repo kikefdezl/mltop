@@ -33,7 +33,7 @@ impl AppData {
         let gpu = match Gpu::new(&nvml) {
             Err(_) => None,
             Ok(mut g) => {
-                g.update(&nvml);
+                let _ = g.update(&nvml);
                 Some(g)
             }
         };
@@ -59,7 +59,7 @@ impl AppData {
         self.memory = Memory::read(&self.sys);
 
         if let Some(gpu) = self.gpu.as_mut() {
-            gpu.update(&self.nvml);
+            let _ = gpu.update(&self.nvml);
         }
 
         self.processes = match Processes::read(&self.sys, &self.nvml) {
