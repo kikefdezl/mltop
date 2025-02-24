@@ -73,10 +73,6 @@ I welcome contributions to **mltop**! Especially those aimed towards supporting 
 - Commit your changes with clear messages.
 - Submit a pull request.
 
-## Code of Conduct
-
-By contributing to this project, you agree to abide by the Code of Conduct.
-
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](./LICENSE.MD) file for details.
