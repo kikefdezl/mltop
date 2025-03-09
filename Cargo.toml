@@ -1,6 +1,6 @@
 [package]
 name = "mltop"
-version = "0.2.0"
+version = "0.2.1"
 description = "Resource monitor for ML engineers written in Rust"
 edition = "2021"
 license = "MIT"
