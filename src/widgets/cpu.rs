@@ -25,7 +25,7 @@ impl Widget for CpuWidget {
         let mut spans = vec![Span::styled("Total ", Style::default().fg(Color::Cyan))];
 
         let usage = self.data.usage.last().unwrap();
-        let text = format!("{:.2}%", usage);
+        let text = format!("{:.1}%", usage);
         let total_bar = percentage_bar(area.width - 10, *usage, &text);
         spans.extend(total_bar);
 
@@ -50,7 +50,7 @@ impl Widget for CpuWidget {
                     Style::default().fg(Color::Cyan),
                 )); // cpu number
 
-                let text = format!("{:.2}%", self.data.cores[i].usage);
+                let text = format!("{:.1}%", self.data.cores[i].usage);
                 let bar = percentage_bar(core_width as u16 - 14, self.data.cores[i].usage, &text);
                 spans.extend(bar);
 
