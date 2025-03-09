@@ -1,0 +1,57 @@
+name: Create Release PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type (patch, minor, major)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-release
+        run: cargo install cargo-release
+
+      - name: Cargo release bump version
+        run: |
+          cargo release ${{ github.event.inputs.version_type }} --execute --no-publish --no-tag --no-push --no-confirm
+
+      - name: Get version
+        run: |
+          VERSION=$(grep -Po '^version = "\K[0-9\.]+' Cargo.toml)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: release/v${{ env.VERSION }}
+          title: "Release v${{ env.VERSION }}"
+          body: ""
+          base: main
+
