@@ -42,10 +42,7 @@ impl AppData {
             cpu,
             memory: Memory::read(&sys),
             gpu,
-            processes: match Processes::read(&sys, &nvml) {
-                Ok(p) => p,
-                Err(_) => Processes(Vec::new()),
-            },
+            processes: Processes::read(&sys, &nvml),
             sys,
             nvml,
         }
@@ -62,9 +59,6 @@ impl AppData {
             let _ = gpu.update(&self.nvml);
         }
 
-        self.processes = match Processes::read(&self.sys, &self.nvml) {
-            Ok(p) => p,
-            Err(_) => Processes(Vec::new()),
-        };
+        self.processes = Processes::read(&self.sys, &self.nvml);
     }
 }

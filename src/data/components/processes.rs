@@ -1,12 +1,13 @@
 use nvml_wrapper::{error::NvmlError, Nvml};
+use std::collections::HashMap;
 use std::vec::IntoIter;
-use sysinfo::{Pid, System};
+use sysinfo::System;
 
 #[derive(Clone)]
 pub enum ProcessType {
-    // TODO: Add cpu processes as well
     GpuGraphic,
     GpuCompute,
+    Cpu,
 }
 
 impl ToString for ProcessType {
@@ -14,6 +15,7 @@ impl ToString for ProcessType {
         match self {
             ProcessType::GpuGraphic => "GRAPHIC".to_string(),
             ProcessType::GpuCompute => "COMPUTE".to_string(),
+            ProcessType::Cpu => "CPU".to_string(),
         }
     }
 }
@@ -35,51 +37,79 @@ pub struct Process {
 pub struct Processes(pub Vec<Process>);
 
 impl Processes {
-    pub fn read(sys: &System, nvml: &Option<Nvml>) -> Result<Processes, NvmlError> {
-        if nvml.is_none() {
-            return Ok(Processes(Vec::new()));
-        }
-
-        let nvml = nvml.as_ref().unwrap();
-        let device = nvml.device_by_index(0)?;
-
-        let mut processes = Vec::new();
-
+    pub fn read(sys: &System, nvml: &Option<Nvml>) -> Processes {
         let total_memory = sys.total_memory();
 
-        processes.extend(device.running_compute_processes()?.iter().filter_map(|x| {
-            match sys.process(Pid::from(x.pid as usize)) {
-                None => None,
-                Some(p) => Some({
-                    let memory = p.memory();
+        let mut processes: HashMap<u32, Process> = sys
+            .processes()
+            .iter()
+            .filter_map(|(pid, p)| {
+                let pid = pid.as_u32();
+                let memory = p.memory();
+                Some((
+                    pid,
                     Process {
-                        pid: x.pid,
-                        type_: ProcessType::GpuCompute,
-                        command: String::from(p.exe().unwrap().to_str().unwrap()),
+                        pid,
+                        type_: ProcessType::Cpu,
+                        command: String::from(p.exe()?.to_str().unwrap()),
                         memory,
                         memory_usage: (memory as f32 / total_memory as f32) * 100.0,
                         cpu_usage: p.cpu_usage(),
-                    }
-                }),
+                    },
+                ))
+            })
+            .collect();
+
+        // find which ones are GPU and mark them as such
+        if nvml.is_none() {
+            return Processes(processes.into_values().collect());
+        }
+        let nvml = nvml.as_ref().unwrap();
+
+        match Processes::gpu_compute_pids(&nvml) {
+            Ok(pids) => {
+                Processes::update_process_type(pids, &mut processes, ProcessType::GpuCompute)
             }
-        }));
-        processes.extend(device.running_graphics_processes()?.iter().filter_map(|x| {
-            match sys.process(Pid::from(x.pid as usize)) {
-                None => None,
-                Some(p) => Some({
-                    let memory = p.memory();
-                    Process {
-                        pid: x.pid,
-                        type_: ProcessType::GpuGraphic,
-                        command: String::from(p.exe().unwrap().to_str().unwrap()),
-                        memory,
-                        memory_usage: (memory as f32 / total_memory as f32) * 100.0,
-                        cpu_usage: p.cpu_usage(),
-                    }
-                }),
+            Err(_) => {}
+        }
+        match Processes::gpu_graphics_pids(&nvml) {
+            Ok(pids) => {
+                Processes::update_process_type(pids, &mut processes, ProcessType::GpuGraphic)
             }
-        }));
-        Ok(Processes(processes))
+            Err(_) => {}
+        }
+
+        Processes(processes.into_values().collect())
+    }
+
+    fn gpu_compute_pids(nvml: &Nvml) -> Result<Vec<u32>, NvmlError> {
+        let device = nvml.device_by_index(0)?;
+        Ok(device
+            .running_compute_processes()?
+            .iter()
+            .map(|pi| pi.pid)
+            .collect())
+    }
+
+    fn gpu_graphics_pids(nvml: &Nvml) -> Result<Vec<u32>, NvmlError> {
+        let device = nvml.device_by_index(0)?;
+        Ok(device
+            .running_graphics_processes()?
+            .iter()
+            .map(|pi| pi.pid)
+            .collect())
+    }
+
+    fn update_process_type(
+        pids: Vec<u32>,
+        processes: &mut HashMap<u32, Process>,
+        process_type: ProcessType,
+    ) {
+        for pid in pids {
+            if let Some(obj) = processes.get_mut(&pid) {
+                obj.type_ = process_type.clone();
+            }
+        }
     }
 
     pub fn into_iter(&self) -> IntoIter<Process> {

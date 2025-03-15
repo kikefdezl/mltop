@@ -12,6 +12,7 @@ repository = "https://github.com/kikefdezl/mltop"
 
 [dependencies]
 crossterm = "0.28.1"
+itertools = "0.14.0"
 nvml-wrapper = "0.10.0"
 ratatui = "0.29.0"
 sysinfo = { version = "0.30.12", default-features = false }
