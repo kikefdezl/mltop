@@ -32,14 +32,14 @@ impl CpuWidget {
 
 impl Widget for CpuWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let mut spans = vec![Span::styled("Total ", Style::default().fg(Color::Cyan))];
+        let mut spans = vec![Span::styled(" Total ", Style::default().fg(Color::Cyan))];
 
         let usage = self.data.usage.last().unwrap();
         let text = format!("{:.1}%", usage);
-        let total_bar = percentage_bar(area.width - 10, *usage, &text);
+        let total_bar = percentage_bar(area.width - 21, *usage, &text);
         spans.extend(total_bar);
 
-        let mut lines = vec![Line::from(spans)];
+        let mut lines = vec![Line::from(spans).left_aligned()];
 
         let (cpu_rows, cpu_cols) = self.grid_dimensions();
         let core_width = area.width / cpu_cols;
