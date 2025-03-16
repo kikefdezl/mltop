@@ -10,6 +10,8 @@ use ratatui::{
     widgets::{Paragraph, Widget},
 };
 
+pub const MEMORY_WIDGET_HEIGHT: u16 = 2;
+
 pub struct MemoryWidget {
     data: Memory,
 }

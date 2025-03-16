@@ -3,9 +3,9 @@ use std::io;
 use crate::config::REFRESH_RATE_MILLIS;
 use crate::data::data::AppData;
 use crate::widgets::cpu::CpuWidget;
-use crate::widgets::gpu::GpuWidget;
+use crate::widgets::gpu::{GpuWidget, GPU_WIDGET_HEIGHT};
 use crate::widgets::line_graph::LineGraphWidget;
-use crate::widgets::memory::MemoryWidget;
+use crate::widgets::memory::{MemoryWidget, MEMORY_WIDGET_HEIGHT};
 use crate::widgets::processes::ProcessesWidget;
 use crossterm::event::{self, poll, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
@@ -62,30 +62,26 @@ impl App {
     }
 
     fn draw(&self, frame: &mut Frame) {
+        let cpu_widget = CpuWidget::new(self.data.cpu.clone());
+        let memory_widget = MemoryWidget::new(self.data.memory.clone());
+        let line_graph_widget = LineGraphWidget::new(self.data.cpu.clone(), self.data.gpu.clone());
+        let gpu_widget = GpuWidget::new(self.data.gpu.clone());
+        let processes_widget = ProcessesWidget::new(self.data.processes.clone());
+
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![
-                Constraint::Max(5),
-                Constraint::Length(2),
-                Constraint::Length(20),
-                Constraint::Length(4),
-                Constraint::Min(1),
+                Constraint::Length(cpu_widget.grid_dimensions().1),
+                Constraint::Length(MEMORY_WIDGET_HEIGHT),
+                Constraint::Max(20),
+                Constraint::Length(GPU_WIDGET_HEIGHT),
+                Constraint::Min(0),
             ])
             .split(frame.area());
-
-        let cpu_widget = CpuWidget::new(self.data.cpu.clone());
         frame.render_widget(cpu_widget, layout[0]);
-
-        let memory_widget = MemoryWidget::new(self.data.memory.clone());
         frame.render_widget(memory_widget, layout[1]);
-
-        let line_graph_widget = LineGraphWidget::new(self.data.cpu.clone(), self.data.gpu.clone());
         frame.render_widget(line_graph_widget, layout[2]);
-
-        let gpu_widget = GpuWidget::new(self.data.gpu.clone());
         frame.render_widget(gpu_widget, layout[3]);
-
-        let processes_widget = ProcessesWidget::new(self.data.processes.clone());
         frame.render_widget(processes_widget, layout[4]);
     }
     fn exit(&mut self) {

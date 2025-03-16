@@ -18,6 +18,16 @@ impl CpuWidget {
     pub fn new(data: Cpu) -> CpuWidget {
         CpuWidget { data }
     }
+
+    pub fn grid_dimensions(&self) -> (u16, u16) {
+        let cores = self.data.cores.len();
+        let cpu_rows = fast_int_sqrt(cores) as u16;
+        let mut cpu_cols: u16 = 0;
+        while ((cpu_cols * cpu_rows) as usize) < cores {
+            cpu_cols += 1;
+        }
+        (cpu_rows, cpu_cols)
+    }
 }
 
 impl Widget for CpuWidget {
@@ -31,19 +41,13 @@ impl Widget for CpuWidget {
 
         let mut lines = vec![Line::from(spans)];
 
-        let num_cpus = self.data.cores.len();
-        let cpu_rows = fast_int_sqrt(num_cpus);
-        let mut cpu_cols = 0;
-        while cpu_cols * cpu_rows < num_cpus {
-            cpu_cols += 1;
-        }
-
-        let core_width = area.width as usize / cpu_cols;
+        let (cpu_rows, cpu_cols) = self.grid_dimensions();
+        let core_width = area.width / cpu_cols;
 
         for r in 0..cpu_rows {
             let mut spans = vec![];
             for c in 0..cpu_cols {
-                let i = c * cpu_rows + r;
+                let i = (c * cpu_rows + r) as usize;
 
                 spans.push(Span::styled(
                     format!(" {:>2}", i),

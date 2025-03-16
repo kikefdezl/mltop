@@ -10,6 +10,8 @@ use ratatui::{
     widgets::{Block, BorderType, Padding, Paragraph, Widget},
 };
 
+pub const GPU_WIDGET_HEIGHT: u16 = 4;
+
 pub struct GpuWidget {
     data: Option<Gpu>,
 }
