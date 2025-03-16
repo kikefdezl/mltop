@@ -64,14 +64,14 @@ impl Widget for GpuWidget {
                 ));
 
                 spans.push(Span::styled(" MEM", Style::default().fg(Color::Cyan)));
-                let used = gpu.used_memory.last().unwrap();
-                let mem_perc: f32 = (*used / gpu.max_memory) as f32 * 100.0;
+                let used: u64 = *gpu.used_memory.last().unwrap();
+                let mem_perc: f32 = (used as f32 / gpu.max_memory as f32) * 100.0;
                 spans.extend(percentage_bar(
                     area.width / 3 - 5,
                     mem_perc,
                     &format!(
                         "{:.2}Gi/{:.2}Gi",
-                        (*used as f32) / BYTES_PER_GB_FLOAT,
+                        (used as f32) / BYTES_PER_GB_FLOAT,
                         (gpu.max_memory as f32) / BYTES_PER_GB_FLOAT
                     ),
                 ));
