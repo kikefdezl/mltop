@@ -59,7 +59,7 @@ impl Widget for CpuWidget {
                 spans.extend(bar);
 
                 let (temp_str, color) = if self.data.cores[i].temp == 0.0 {
-                    (" N/A   ".to_string(), Color::White)
+                    (" N/A   ".to_string(), Color::DarkGray)
                 } else {
                     let temp_str = format!("{:>5.1}°C", self.data.cores[i].temp);
                     if self.data.cores[i].temp > 90.0 {
