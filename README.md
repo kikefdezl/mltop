@@ -20,7 +20,7 @@
 
 ## Installation
 
-You can easily install **mltop** via pre-built binaries or by compiling from source.
+You can easily install **mltop** by compiling from source with the Rust toolchain.
 
 
 ### Building from Source
@@ -37,8 +37,10 @@ cd mltop
 3. Build & run the project:
 
 ```bash
-cargo run --release
+cargo build --release
 ```
+
+This will compile the binary into `target/release/mltop`.
 
 ### Pre-built Binaries
 

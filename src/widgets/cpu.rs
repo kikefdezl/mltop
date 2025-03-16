@@ -18,32 +18,36 @@ impl CpuWidget {
     pub fn new(data: Cpu) -> CpuWidget {
         CpuWidget { data }
     }
+
+    pub fn grid_dimensions(&self) -> (u16, u16) {
+        let cores = self.data.cores.len();
+        let cpu_rows = fast_int_sqrt(cores) as u16;
+        let mut cpu_cols: u16 = 0;
+        while ((cpu_cols * cpu_rows) as usize) < cores {
+            cpu_cols += 1;
+        }
+        (cpu_rows, cpu_cols)
+    }
 }
 
 impl Widget for CpuWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let mut spans = vec![Span::styled("Total ", Style::default().fg(Color::Cyan))];
+        let mut spans = vec![Span::styled(" Total ", Style::default().fg(Color::Cyan))];
 
         let usage = self.data.usage.last().unwrap();
         let text = format!("{:.1}%", usage);
-        let total_bar = percentage_bar(area.width - 10, *usage, &text);
+        let total_bar = percentage_bar(area.width - 21, *usage, &text);
         spans.extend(total_bar);
 
-        let mut lines = vec![Line::from(spans)];
+        let mut lines = vec![Line::from(spans).left_aligned()];
 
-        let num_cpus = self.data.cores.len();
-        let cpu_rows = fast_int_sqrt(num_cpus);
-        let mut cpu_cols = 0;
-        while cpu_cols * cpu_rows < num_cpus {
-            cpu_cols += 1;
-        }
-
-        let core_width = area.width as usize / cpu_cols;
+        let (cpu_rows, cpu_cols) = self.grid_dimensions();
+        let core_width = area.width / cpu_cols;
 
         for r in 0..cpu_rows {
             let mut spans = vec![];
             for c in 0..cpu_cols {
-                let i = c * cpu_rows + r;
+                let i = (c * cpu_rows + r) as usize;
 
                 spans.push(Span::styled(
                     format!(" {:>2}", i),
@@ -55,7 +59,7 @@ impl Widget for CpuWidget {
                 spans.extend(bar);
 
                 let (temp_str, color) = if self.data.cores[i].temp == 0.0 {
-                    (" N/A   ".to_string(), Color::White)
+                    (" N/A   ".to_string(), Color::DarkGray)
                 } else {
                     let temp_str = format!("{:>5.1}°C", self.data.cores[i].temp);
                     if self.data.cores[i].temp > 90.0 {

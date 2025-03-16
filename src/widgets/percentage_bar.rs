@@ -1,10 +1,12 @@
 use ratatui::{
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     text::Span,
 };
 
+const BRACKET_STYLE: Style = Style::new().add_modifier(Modifier::BOLD);
+
 pub fn percentage_bar<'a>(width: u16, perc: f32, text: &str) -> Vec<Span<'a>> {
-    let mut spans = vec![Span::raw("[".to_string())];
+    let mut spans = vec![Span::styled("[".to_string(), BRACKET_STYLE)];
 
     let color: Color = if perc > 90.0 {
         Color::Red
@@ -43,7 +45,7 @@ pub fn percentage_bar<'a>(width: u16, perc: f32, text: &str) -> Vec<Span<'a>> {
         Style::default().fg(Color::DarkGray),
     ));
 
-    spans.push(Span::raw("]".to_string()));
+    spans.push(Span::styled("]".to_string(), BRACKET_STYLE));
 
     spans
 }
