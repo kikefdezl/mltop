@@ -7,7 +7,7 @@ use crate::widgets::gpu::{GpuWidget, GPU_WIDGET_HEIGHT};
 use crate::widgets::line_graph::LineGraphWidget;
 use crate::widgets::memory::{MemoryWidget, MEMORY_WIDGET_HEIGHT};
 use crate::widgets::processes::ProcessesWidget;
-use crossterm::event::{self, poll, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{self, poll, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     DefaultTerminal, Frame,
@@ -55,8 +55,15 @@ impl App {
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) {
-        match key_event.code {
-            KeyCode::Char('q') => self.exit(),
+        match key_event.modifiers {
+            KeyModifiers::NONE => match key_event.code {
+                KeyCode::Char('q') => self.exit(),
+                _ => {}
+            },
+            KeyModifiers::CONTROL => match key_event.code {
+                KeyCode::Char('c') => self.exit(),
+                _ => {}
+            },
             _ => {}
         }
     }
