@@ -1,6 +1,6 @@
 use std::io;
-use std::sync::mpsc::{self, Receiver};
-use std::thread;
+use tokio::sync::mpsc::{self, Sender};
+use tokio::time::Duration;
 
 use crate::config::REFRESH_RATE_MILLIS;
 use crate::data::data::AppData;
@@ -18,61 +18,76 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     DefaultTerminal,
 };
-use std::time::Duration;
 
 pub struct App {
     terminal: DefaultTerminal,
     data: AppData,
     exit: bool,
-    refresh_rate: Duration,
+    refresh_rate_ms: u64,
 }
 
 impl App {
     pub fn new() -> App {
         let terminal = ratatui::init();
         let data = AppData::new();
-        let refresh_rate = Duration::from_millis(REFRESH_RATE_MILLIS);
         App {
             terminal,
             data,
             exit: false,
-            refresh_rate,
+            refresh_rate_ms: REFRESH_RATE_MILLIS,
         }
     }
 
-    pub fn run(&mut self) -> io::Result<()> {
+    pub async fn run(&mut self) -> io::Result<()> {
         self.data.update();
         self.render();
-        let (tx, rx) = mpsc::channel();
+        let (tx, mut rx) = mpsc::channel(32);
 
-        let event_tx = tx.clone();
-        thread::spawn(move || loop {
-            if event::poll(Duration::from_millis(100)).unwrap() {
-                if let Ok(evt) = event::read() {
-                    event_tx.send(Event::Crossterm(evt)).unwrap();
-                };
-            }
-        });
-
-        let duration = self.refresh_rate;
-        let event_tx = tx.clone();
-        thread::spawn(move || loop {
-            thread::sleep(duration);
-            event_tx.send(Event::Render).unwrap();
-        });
+        App::spawn_crossterm_event_thread(tx.clone(), 200);
+        App::spawn_render_event_thread(tx.clone(), self.refresh_rate_ms);
 
         while !self.exit {
-            let _ = self.handle_events(&rx);
+            match rx.recv().await.unwrap() {
+                Event::Crossterm(evt) => self.handle_crossterm_event(evt)?,
+                Event::Render => self.handle_render_event()?,
+            }
         }
         Ok(())
     }
 
-    fn handle_events(&mut self, rx: &Receiver<Event>) -> io::Result<()> {
-        match rx.recv().unwrap() {
-            Event::Crossterm(evt) => self.handle_crossterm_event(evt)?,
-            Event::Render => self.handle_render_event()?,
-        }
-        Ok(())
+    /// Spawns a thread that captures CrosstermEvents and re-emits them
+    /// to the mpsc channel, wrapped into the Crossterm variant of the Event enum:
+    /// Event::Crossterm<CrosstermEvent>
+    fn spawn_crossterm_event_thread(tx: Sender<Event>, poll_rate: u64) {
+        tokio::spawn(async move {
+            loop {
+                let event_result = tokio::task::spawn_blocking(move || {
+                    if event::poll(Duration::from_millis(poll_rate)).unwrap() {
+                        Some(event::read().unwrap())
+                    } else {
+                        None
+                    }
+                })
+                .await
+                .unwrap();
+
+                if let Some(evt) = event_result {
+                    tx.send(Event::Crossterm(evt)).await.unwrap();
+                }
+            }
+        });
+    }
+
+    /// Spawns a thread that sends an Event::Render to the mpsc channel
+    fn spawn_render_event_thread(tx: Sender<Event>, render_rate: u64) {
+        let mut interval = tokio::time::interval(Duration::from_millis(render_rate));
+        let custom_tx = tx.clone();
+        tokio::spawn(async move {
+            loop {
+                interval.tick().await;
+                custom_tx.send(Event::Render).await.unwrap();
+            }
+        });
     }
 
     fn handle_crossterm_event(&mut self, cross_evt: CrosstermEvent) -> io::Result<()> {
@@ -106,11 +121,11 @@ impl App {
     }
 
     fn render(&mut self) {
-        let cpu_widget = CpuWidget::new(self.data.cpu.clone());
-        let memory_widget = MemoryWidget::new(self.data.memory.clone());
-        let line_graph_widget = LineGraphWidget::new(self.data.cpu.clone(), self.data.gpu.clone());
-        let gpu_widget = GpuWidget::new(self.data.gpu.clone());
-        let processes_widget = ProcessesWidget::new(self.data.processes.clone());
+        let cpu_widget = CpuWidget::new(&self.data.cpu);
+        let memory_widget = MemoryWidget::new(&self.data.memory);
+        let line_graph_widget = LineGraphWidget::new(&self.data.cpu, &self.data.gpu);
+        let gpu_widget = GpuWidget::new(&self.data.gpu);
+        let processes_widget = ProcessesWidget::new(&self.data.processes);
 
         let _ = self.terminal.draw(|frame| {
             let layout = Layout::default()

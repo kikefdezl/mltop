@@ -1,5 +1,6 @@
 use app::App;
 use std::io;
+use tokio;
 
 mod app;
 mod config;
@@ -9,9 +10,10 @@ mod event;
 mod utils;
 mod widgets;
 
-fn main() -> io::Result<()> {
+#[tokio::main]
+async fn main() -> io::Result<()> {
     let mut app = App::new();
-    let result = app.run();
+    let result = app.run().await;
     ratatui::restore();
     result
 }

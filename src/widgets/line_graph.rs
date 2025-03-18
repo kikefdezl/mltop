@@ -12,18 +12,18 @@ use ratatui::{
     widgets::{Axis, Block, BorderType, Chart, Dataset},
 };
 
-pub struct LineGraphWidget {
-    cpu_data: Cpu,
-    gpu_data: Option<Gpu>,
+pub struct LineGraphWidget<'a> {
+    cpu_data: &'a Cpu,
+    gpu_data: &'a Option<Gpu>,
 }
 
-impl LineGraphWidget {
-    pub fn new(cpu_data: Cpu, gpu_data: Option<Gpu>) -> LineGraphWidget {
+impl LineGraphWidget<'_> {
+    pub fn new<'a>(cpu_data: &'a Cpu, gpu_data: &'a Option<Gpu>) -> LineGraphWidget<'a> {
         LineGraphWidget { cpu_data, gpu_data }
     }
 }
 
-impl Widget for LineGraphWidget {
+impl Widget for LineGraphWidget<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut datasets = vec![];
 

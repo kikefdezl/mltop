@@ -16,3 +16,4 @@ itertools = "0.14.0"
 nvml-wrapper = "0.10.0"
 ratatui = "0.29.0"
 sysinfo = { version = "0.30.12", default-features = false }
+tokio = { version = "1.44.1", features = ["full"]}

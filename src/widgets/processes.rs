@@ -22,18 +22,18 @@ const CONSTRAINTS: [Constraint; 6] = [
     Constraint::Min(10),
 ];
 
-pub struct ProcessesWidget {
-    data: Processes,
+pub struct ProcessesWidget<'a> {
+    data: &'a Processes,
 }
 
-impl ProcessesWidget {
-    pub fn new(data: Processes) -> ProcessesWidget {
+impl ProcessesWidget<'_> {
+    pub fn new<'a>(data: &'a Processes) -> ProcessesWidget<'a> {
         ProcessesWidget { data }
     }
 }
 
-impl Widget for ProcessesWidget {
-    fn render(mut self, area: Rect, buf: &mut Buffer) {
+impl Widget for ProcessesWidget<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let header_style = Style::default().fg(Color::Black).bg(Color::White);
 
         let header = HEADER
@@ -43,7 +43,8 @@ impl Widget for ProcessesWidget {
             .style(header_style)
             .height(1);
 
-        self.data.0.sort_by_key(|p| (p.cpu_usage * 1000.0) as u32);
+        let mut data = self.data.0.clone();
+        data.sort_by_key(|p| (p.cpu_usage * 1000.0) as u32);
         let rows: Vec<Row> = self
             .data
             .into_iter()
