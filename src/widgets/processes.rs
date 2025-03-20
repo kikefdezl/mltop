@@ -12,11 +12,11 @@ use ratatui::{
 const GPU_COMPUTE_COLOR: Color = Color::Magenta;
 const GPU_GRAPHIC_COLOR: Color = Color::Yellow;
 
-const HEADER: [&str; 6] = ["   pid", "type", " CPU%", "  MEM%", "      MEM", "Command"];
+const HEADER: [&str; 6] = ["   pid", "type", "  CPU%", "  MEM%", "      MEM", "Command"];
 const CONSTRAINTS: [Constraint; 6] = [
     Constraint::Length(6),
     Constraint::Length(8),
-    Constraint::Length(5),
+    Constraint::Length(6),
     Constraint::Length(6),
     Constraint::Length(9),
     Constraint::Min(10),
