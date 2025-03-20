@@ -59,7 +59,14 @@ impl Widget for ProcessesWidget<'_> {
                     Cell::from(Text::from(data.pid.to_string()).alignment(Alignment::Right)),
                     Cell::from(Text::from(data.type_.to_string())),
                     Cell::from(
-                        Text::from(format!("{:.1}%", data.cpu_usage)).alignment(Alignment::Right),
+                        Text::from(format!(
+                            "{}%",
+                            format!("{:.1}%", data.cpu_usage)
+                                .chars()
+                                .take(4)
+                                .collect::<String>()
+                        ))
+                        .alignment(Alignment::Right),
                     ),
                     Cell::from(
                         Text::from(format!("{:.1}%", data.memory_usage))
