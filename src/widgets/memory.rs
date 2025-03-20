@@ -12,17 +12,17 @@ use ratatui::{
 
 pub const MEMORY_WIDGET_HEIGHT: u16 = 1;
 
-pub struct MemoryWidget {
-    data: Memory,
+pub struct MemoryWidget<'a> {
+    data: &'a Memory,
 }
 
-impl MemoryWidget {
-    pub fn new(data: Memory) -> MemoryWidget {
+impl MemoryWidget<'_> {
+    pub fn new<'a>(data: &'a Memory) -> MemoryWidget<'a> {
         MemoryWidget { data }
     }
 }
 
-impl Widget for MemoryWidget {
+impl Widget for MemoryWidget<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         // memory
         let mut spans = vec![Span::styled(" Memory", Style::default().fg(Color::Yellow))];

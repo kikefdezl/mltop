@@ -12,17 +12,17 @@ use ratatui::{
 
 pub const GPU_WIDGET_HEIGHT: u16 = 4;
 
-pub struct GpuWidget {
-    data: Option<Gpu>,
+pub struct GpuWidget<'a> {
+    data: &'a Option<Gpu>,
 }
 
-impl GpuWidget {
-    pub fn new(data: Option<Gpu>) -> GpuWidget {
+impl GpuWidget<'_> {
+    pub fn new<'a>(data: &'a Option<Gpu>) -> GpuWidget<'a> {
         GpuWidget { data }
     }
 }
 
-impl Widget for GpuWidget {
+impl Widget for GpuWidget<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         match &self.data {
             None => {

@@ -10,12 +10,12 @@ use ratatui::{
     widgets::{Paragraph, Widget},
 };
 
-pub struct CpuWidget {
-    data: Cpu,
+pub struct CpuWidget<'a> {
+    data: &'a Cpu,
 }
 
-impl CpuWidget {
-    pub fn new(data: Cpu) -> CpuWidget {
+impl CpuWidget<'_> {
+    pub fn new<'a>(data: &Cpu) -> CpuWidget {
         CpuWidget { data }
     }
 
@@ -30,7 +30,7 @@ impl CpuWidget {
     }
 }
 
-impl Widget for CpuWidget {
+impl Widget for CpuWidget<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut spans = vec![Span::styled(" Total ", Style::default().fg(Color::Cyan))];
 
