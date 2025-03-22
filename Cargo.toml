@@ -4,7 +4,6 @@ version = "0.2.1"
 description = "Resource monitor for ML engineers written in Rust"
 edition = "2021"
 license = "MIT"
-license_file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/kikefdezl/mltop"
 
@@ -16,4 +15,3 @@ itertools = "0.14.0"
 nvml-wrapper = "0.10.0"
 ratatui = "0.29.0"
 sysinfo = { version = "0.30.12", default-features = false }
-tokio = { version = "1.44.1", features = ["full"]}

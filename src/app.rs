@@ -1,6 +1,6 @@
-use std::io;
-use tokio::sync::mpsc::{self, Sender};
-use tokio::time::Duration;
+use std::{io, thread};
+use std::sync::mpsc::{self, Sender};
+use std::time::Duration;
 
 use crate::config::REFRESH_RATE_MILLIS;
 use crate::data::data::AppData;
@@ -38,16 +38,16 @@ impl App {
         }
     }
 
-    pub async fn run(&mut self) -> io::Result<()> {
+    pub fn run(&mut self) -> io::Result<()> {
         self.data.update();
         self.render();
-        let (tx, mut rx) = mpsc::channel(32);
+        let (tx, rx) = mpsc::channel();
 
-        App::spawn_crossterm_event_thread(tx.clone(), 200);
-        App::spawn_render_event_thread(tx.clone(), self.refresh_rate_ms);
+        App::spawn_crossterm_event_thread(tx.clone(), 200)?;
+        App::spawn_render_event_thread(tx.clone(), self.refresh_rate_ms)?;
 
         while !self.exit {
-            match rx.recv().await.unwrap() {
+            match rx.recv().unwrap() {
                 Event::Crossterm(evt) => self.handle_crossterm_event(evt)?,
                 Event::Render => self.handle_render_event()?,
             }
@@ -58,36 +58,28 @@ impl App {
     /// Spawns a thread that captures CrosstermEvents and re-emits them
     /// to the mpsc channel, wrapped into the Crossterm variant of the Event enum:
     /// Event::Crossterm<CrosstermEvent>
-    fn spawn_crossterm_event_thread(tx: Sender<Event>, poll_rate: u64) {
-        tokio::spawn(async move {
+    fn spawn_crossterm_event_thread(tx: Sender<Event>, poll_rate: u64)  -> io::Result<()> {
+        thread::spawn(move || {
             loop {
-                let event_result = tokio::task::spawn_blocking(move || {
-                    if event::poll(Duration::from_millis(poll_rate)).unwrap() {
-                        Some(event::read().unwrap())
-                    } else {
-                        None
-                    }
-                })
-                .await
-                .unwrap();
-
-                if let Some(evt) = event_result {
-                    tx.send(Event::Crossterm(evt)).await.unwrap();
+                if event::poll(Duration::from_millis(poll_rate)).unwrap() {
+                    tx.send(Event::Crossterm(event::read().unwrap())).unwrap();
                 }
             }
         });
+        Ok(())
     }
 
     /// Spawns a thread that sends an Event::Render to the mpsc channel
-    fn spawn_render_event_thread(tx: Sender<Event>, render_rate: u64) {
-        let mut interval = tokio::time::interval(Duration::from_millis(render_rate));
+    fn spawn_render_event_thread(tx: Sender<Event>, render_rate: u64)  -> io::Result<()> {
+        let duration = Duration::from_millis(render_rate);
         let custom_tx = tx.clone();
-        tokio::spawn(async move {
+        thread::spawn(move || {
             loop {
-                interval.tick().await;
-                custom_tx.send(Event::Render).await.unwrap();
+                thread::sleep(duration);
+                custom_tx.send(Event::Render).unwrap();
             }
         });
+        Ok(())
     }
 
     fn handle_crossterm_event(&mut self, cross_evt: CrosstermEvent) -> io::Result<()> {
