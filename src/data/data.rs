@@ -3,7 +3,7 @@ use crate::data::components::gpu::Gpu;
 use crate::data::components::memory::Memory;
 use crate::data::components::processes::Processes;
 use nvml_wrapper::Nvml;
-use sysinfo::{CpuRefreshKind, RefreshKind, System};
+use sysinfo::{MemoryRefreshKind, ProcessRefreshKind, System};
 
 pub struct AppData {
     pub cpu: Cpu,
@@ -16,8 +16,7 @@ pub struct AppData {
 
 impl AppData {
     pub fn new() -> AppData {
-        let mut sys =
-            System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::new()));
+        let mut sys = System::new();
 
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         sys.refresh_all();
@@ -49,16 +48,18 @@ impl AppData {
     }
 
     pub fn update(&mut self) {
-        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-        self.sys.refresh_all();
-
+        self.sys.refresh_cpu_usage();
         self.cpu.update(&self.sys);
+
+        self.sys.refresh_memory();
         self.memory = Memory::read(&self.sys);
 
         if let Some(gpu) = self.gpu.as_mut() {
             let _ = gpu.update(&self.nvml);
         }
 
+        self.sys
+            .refresh_processes_specifics(ProcessRefreshKind::new().with_cpu().with_memory());
         self.processes = Processes::read(&self.sys, &self.nvml);
     }
 }
