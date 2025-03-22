@@ -15,7 +15,7 @@ pub fn percentage_bar<'a>(width: u16, perc: f32, text: &str) -> Vec<Span<'a>> {
     } else if perc > 40.0 {
         Color::Yellow
     } else {
-        Color::White
+        Color::Green
     };
 
     let full_width = (width as f32 * (perc / 100.0)).round() as u16;
