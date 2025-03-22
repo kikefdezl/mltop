@@ -1,6 +1,6 @@
-use std::{io, thread};
 use std::sync::mpsc::{self, Sender};
 use std::time::Duration;
+use std::{io, thread};
 
 use crate::config::REFRESH_RATE_MILLIS;
 use crate::data::data::AppData;
@@ -9,7 +9,7 @@ use crate::widgets::cpu::CpuWidget;
 use crate::widgets::gpu::{GpuWidget, GPU_WIDGET_HEIGHT};
 use crate::widgets::line_graph::LineGraphWidget;
 use crate::widgets::memory::{MemoryWidget, MEMORY_WIDGET_HEIGHT};
-use crate::widgets::processes::ProcessesWidget;
+use crate::widgets::table_of_processes::TableOfProcessesWidget;
 
 use crossterm::event::{
     self, Event as CrosstermEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
@@ -58,26 +58,22 @@ impl App {
     /// Spawns a thread that captures CrosstermEvents and re-emits them
     /// to the mpsc channel, wrapped into the Crossterm variant of the Event enum:
     /// Event::Crossterm<CrosstermEvent>
-    fn spawn_crossterm_event_thread(tx: Sender<Event>, poll_rate: u64)  -> io::Result<()> {
-        thread::spawn(move || {
-            loop {
-                if event::poll(Duration::from_millis(poll_rate)).unwrap() {
-                    tx.send(Event::Crossterm(event::read().unwrap())).unwrap();
-                }
+    fn spawn_crossterm_event_thread(tx: Sender<Event>, poll_rate: u64) -> io::Result<()> {
+        thread::spawn(move || loop {
+            if event::poll(Duration::from_millis(poll_rate)).unwrap() {
+                tx.send(Event::Crossterm(event::read().unwrap())).unwrap();
             }
         });
         Ok(())
     }
 
     /// Spawns a thread that sends an Event::Render to the mpsc channel
-    fn spawn_render_event_thread(tx: Sender<Event>, render_rate: u64)  -> io::Result<()> {
+    fn spawn_render_event_thread(tx: Sender<Event>, render_rate: u64) -> io::Result<()> {
         let duration = Duration::from_millis(render_rate);
         let custom_tx = tx.clone();
-        thread::spawn(move || {
-            loop {
-                thread::sleep(duration);
-                custom_tx.send(Event::Render).unwrap();
-            }
+        thread::spawn(move || loop {
+            thread::sleep(duration);
+            custom_tx.send(Event::Render).unwrap();
         });
         Ok(())
     }
@@ -117,7 +113,7 @@ impl App {
         let memory_widget = MemoryWidget::new(&self.data.memory);
         let line_graph_widget = LineGraphWidget::new(&self.data.cpu, &self.data.gpu);
         let gpu_widget = GpuWidget::new(&self.data.gpu);
-        let processes_widget = ProcessesWidget::new(&self.data.processes);
+        let processes_widget = TableOfProcessesWidget::new(&self.data.processes);
 
         let _ = self.terminal.draw(|frame| {
             let layout = Layout::default()

@@ -22,11 +22,11 @@ const CONSTRAINTS: [Constraint; 6] = [
     Constraint::Min(10),
 ];
 
-pub struct ProcessesWidget<'a> {
+pub struct TableOfProcessesWidget<'a> {
     data: &'a Processes,
 }
 
-impl Widget for ProcessesWidget<'_> {
+impl Widget for TableOfProcessesWidget<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let header_style = Style::default().fg(Color::Black).bg(Color::White);
 
@@ -52,9 +52,9 @@ impl Widget for ProcessesWidget<'_> {
     }
 }
 
-impl ProcessesWidget<'_> {
-    pub fn new<'a>(data: &'a Processes) -> ProcessesWidget<'a> {
-        ProcessesWidget { data }
+impl TableOfProcessesWidget<'_> {
+    pub fn new<'a>(data: &'a Processes) -> TableOfProcessesWidget<'a> {
+        TableOfProcessesWidget { data }
     }
 
     fn create_row<'a>(data: Process) -> Row<'a> {
