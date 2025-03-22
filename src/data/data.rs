@@ -3,7 +3,7 @@ use crate::data::components::gpu::Gpu;
 use crate::data::components::memory::Memory;
 use crate::data::components::processes::Processes;
 use nvml_wrapper::Nvml;
-use sysinfo::{MemoryRefreshKind, ProcessRefreshKind, System};
+use sysinfo::{ProcessRefreshKind, System};
 
 pub struct AppData {
     pub cpu: Cpu,
@@ -58,8 +58,12 @@ impl AppData {
             let _ = gpu.update(&self.nvml);
         }
 
-        self.sys
-            .refresh_processes_specifics(ProcessRefreshKind::new().with_cpu().with_memory());
+        self.sys.refresh_processes_specifics(
+            ProcessRefreshKind::new()
+                .with_cpu()
+                .with_memory()
+                .with_exe(sysinfo::UpdateKind::OnlyIfNotSet),
+        );
         self.processes = Processes::read(&self.sys, &self.nvml);
     }
 }
