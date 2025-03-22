@@ -64,10 +64,9 @@ impl AppData {
             .with_cpu(CpuRefreshKind::new().with_cpu_usage())
             .with_memory(MemoryRefreshKind::everything())
             .with_processes(
-                ProcessRefreshKind::new()
-                    .with_cpu()
-                    .with_memory()
-                    .with_exe(sysinfo::UpdateKind::OnlyIfNotSet),
+                ProcessRefreshKind::everything(), // .with_cpu()
+                                                  // .with_memory()
+                                                  // .with_cmd(sysinfo::UpdateKind::OnlyIfNotSet),
             );
         sys.refresh_specifics(refresh_kind);
     }

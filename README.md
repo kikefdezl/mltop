@@ -1,4 +1,14 @@
+<div align="center">
+
 # mltop
+
+A resource monitoring tool designed for working with Machine Learning tasks  
+**CPU & GPU at a glance**
+
+![CI](https://github.com/kikefdezl/mltop/actions/workflows/ci.yml/badge.svg/?branch=main)
+[![crates.io](https://img.shields.io/crates/v/mltop.svg)](https://crates.io/crates/mltop)
+
+</div>
 
 ![demo](./assets/demo.png)
 

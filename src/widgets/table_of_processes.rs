@@ -4,7 +4,7 @@ use itertools::Itertools;
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Rect},
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     text::{Line, Span, Text},
     widgets::{Cell, Row, Table, Widget},
 };
@@ -66,7 +66,7 @@ impl TableOfProcessesWidget<'_> {
 
         let cpu_text_color = Self::value_color(data.cpu_usage);
         let mem_text_color = Self::value_color(data.memory_usage);
-        let (cmd_prefix, cmd_suffix) = Self::split_command(&data.command);
+        let (cmd_path, cmd_bin, cmd_args) = Self::split_command(&data.command);
 
         Row::new(vec![
             Cell::from(Text::from(data.pid.to_string()).alignment(Alignment::Right)),
@@ -102,18 +102,38 @@ impl TableOfProcessesWidget<'_> {
                 .alignment(Alignment::Right),
             ),
             Cell::from(Line::from(vec![
-                Span::from(cmd_prefix),
-                Span::styled(cmd_suffix, Style::default().fg(Color::Magenta)),
+                Span::from(cmd_path),
+                Span::styled(
+                    cmd_bin,
+                    Style::default()
+                        .fg(Color::Magenta)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::from(" "),
+                Span::from(cmd_args),
             ])),
         ])
         .style(Style::default().fg(color))
     }
 
-    fn split_command(cmd: &str) -> (String, String) {
-        let split_idx = cmd.rfind('/').map_or(0, |i| i + 1);
-        let prefix: String = cmd.chars().take(split_idx).collect();
-        let suffix: String = cmd.chars().skip(split_idx).collect();
-        (prefix, suffix)
+    /// splits a command into three parts
+    /// - prefix: the path to the binary
+    /// - bin: the binary name
+    /// - suffix: command arguments
+    ///
+    /// Example:
+    ///     `/usr/bin/mltop --help`
+    /// would return:
+    ///     (/usr/bin, mltop, --help)
+    fn split_command(cmd: &str) -> (String, String, String) {
+        let split_idx0 = cmd.rfind('/').map_or(0, |i| i + 1);
+        let path: String = cmd.chars().take(split_idx0).collect();
+
+        let split_idx1 = cmd.find(' ').unwrap_or(cmd.len());
+        let bin: String = cmd[..split_idx1].chars().skip(split_idx0).collect();
+
+        let args: String = cmd.chars().skip(split_idx1 + 1).collect();
+        (path, bin, args)
     }
 
     fn value_color(value: f32) -> Color {
@@ -122,5 +142,33 @@ impl TableOfProcessesWidget<'_> {
         } else {
             Color::DarkGray
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TableOfProcessesWidget;
+
+    #[test]
+    fn test_split_command() {
+        let (path, bin, args) = TableOfProcessesWidget::split_command("/usr/bin/mltop --help");
+        assert_eq!(path, "/usr/bin/");
+        assert_eq!(bin, "mltop");
+        assert_eq!(args, "--help");
+
+        let (path, bin, args) = TableOfProcessesWidget::split_command("mltop");
+        assert_eq!(path, "");
+        assert_eq!(bin, "mltop");
+        assert_eq!(args, "");
+
+        let (path, bin, args) = TableOfProcessesWidget::split_command("/bin/bash -c 'echo hello'");
+        assert_eq!(path, "/bin/");
+        assert_eq!(bin, "bash");
+        assert_eq!(args, "-c 'echo hello'");
+
+        let (path, bin, args) = TableOfProcessesWidget::split_command("/usr/local/bin/python3");
+        assert_eq!(path, "/usr/local/bin/");
+        assert_eq!(bin, "python3");
+        assert_eq!(args, "");
     }
 }
