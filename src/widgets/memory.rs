@@ -35,7 +35,10 @@ impl Widget for MemoryWidget<'_> {
         spans.extend(percentage_bar((area.width / 2) - 16, percentage, &text));
 
         // swap
-        spans.extend(vec![Span::styled("      Swap", Style::default().fg(Color::Yellow))]);
+        spans.extend(vec![Span::styled(
+            "      Swap",
+            Style::default().fg(Color::Yellow),
+        )]);
         let percentage = self.data.used_swap as f32 / self.data.total_swap as f32 * 100.0;
         let text = format!(
             "{:.1}G/{:.1}G",
@@ -44,6 +47,8 @@ impl Widget for MemoryWidget<'_> {
         );
         spans.extend(percentage_bar((area.width / 2) - 16, percentage, &text));
 
-        Paragraph::new(Line::from(spans)).left_aligned().render(area, buf);
+        Paragraph::new(Line::from(spans))
+            .left_aligned()
+            .render(area, buf);
     }
 }

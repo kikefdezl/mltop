@@ -46,12 +46,23 @@ impl Processes {
             .filter_map(|(pid, p)| {
                 let pid = pid.as_u32();
                 let memory = p.memory();
+
+                // TODO: Investigate why p.cmd() sometimes returns an empty array
+                let cmd_list = p.cmd();
+                if cmd_list.is_empty() {
+                    return None;
+                }
+
                 Some((
                     pid,
                     Process {
                         pid,
                         type_: ProcessType::Cpu,
-                        command: String::from(p.exe()?.to_str().unwrap()),
+                        command: cmd_list
+                            .iter()
+                            .map(|s| s.to_string())
+                            .collect::<Vec<_>>()
+                            .join(" "),
                         memory,
                         memory_usage: (memory as f32 / total_memory as f32) * 100.0,
                         cpu_usage: p.cpu_usage(),
