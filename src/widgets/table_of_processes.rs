@@ -137,7 +137,7 @@ impl TableOfProcessesWidget<'_> {
     }
 
     fn value_color(value: f32) -> Color {
-        if value > 0.0 {
+        if value > 0.05 {
             Color::default()
         } else {
             Color::DarkGray
