@@ -175,6 +175,7 @@ impl Tui {
                 self.data.terminate_process(process.pid as usize);
             }
         }
+        self.deactivate();
     }
 
     fn kill_process(&mut self) {
@@ -183,6 +184,7 @@ impl Tui {
                 self.data.kill_process(process.pid as usize);
             }
         }
+        self.deactivate();
     }
 
     fn update_data(&mut self) {
