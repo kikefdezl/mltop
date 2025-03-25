@@ -3,16 +3,18 @@ use crate::{constants::BYTES_PER_MB, data::components::processes::ProcessType};
 use ratatui::widgets::{StatefulWidget, TableState};
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Constraint, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span, Text},
-    widgets::{Cell, Row, Table},
+    widgets::{Block, Cell, Paragraph, Row, Table},
 };
 
 const GPU_COMPUTE_COLOR: Color = Color::Magenta;
 const GPU_GRAPHIC_COLOR: Color = Color::Yellow;
 
 const HEADER: [&str; 6] = ["   pid", "type", " CPU%", "  MEM%", "   MEMORY", "Command"];
+const FOOTER: [(&str, &str); 2] = [("F9", "SIGKILL"), ("F12", "SIGTERM")];
+
 const CONSTRAINTS: [Constraint; 6] = [
     Constraint::Length(6),
     Constraint::Length(8),
@@ -30,14 +32,15 @@ impl StatefulWidget for TableOfProcessesWidget<'_> {
     type State = TableState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let header_style = Style::default().fg(Color::Black).bg(Color::White);
+        let areas = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(0), Constraint::Length(1)]) // Footer takes one row
+            .split(area);
 
-        let header = HEADER
-            .into_iter()
-            .map(Cell::from)
-            .collect::<Row>()
-            .style(header_style)
-            .height(1);
+        let table_area = areas[0];
+        let footer_area = areas[1];
+
+        let header = Self::create_header();
 
         let rows: Vec<Row> = self
             .data
@@ -48,13 +51,26 @@ impl StatefulWidget for TableOfProcessesWidget<'_> {
         Table::new(rows, CONSTRAINTS)
             .header(header)
             .row_highlight_style(Style::new().reversed())
-            .render(area, buf, state);
+            .render(table_area, buf, state);
+
+        Self::render_footer(footer_area, buf);
     }
 }
 
 impl TableOfProcessesWidget<'_> {
     pub fn new<'a>(data: &'a Processes) -> TableOfProcessesWidget<'a> {
         TableOfProcessesWidget { data }
+    }
+
+    fn create_header() -> Row<'static> {
+        let header_style = Style::default().fg(Color::Black).bg(Color::White);
+
+        HEADER
+            .into_iter()
+            .map(Cell::from)
+            .collect::<Row>()
+            .style(header_style)
+            .height(1)
     }
 
     fn create_row<'a>(data: Process) -> Row<'a> {
@@ -142,6 +158,27 @@ impl TableOfProcessesWidget<'_> {
         } else {
             Color::DarkGray
         }
+    }
+
+    fn render_footer(area: Rect, buf: &mut Buffer) {
+        let spans = FOOTER
+            .iter()
+            .map(|f| {
+                vec![
+                    Span::raw(format!(" {}", f.0)),
+                    Span::styled(f.1, Style::new().bg(Color::Cyan).fg(Color::Black)),
+                ]
+            })
+            .flatten()
+            .collect::<Vec<Span>>();
+
+        <Paragraph as ratatui::widgets::Widget>::render(
+            Paragraph::new(Line::from(spans))
+                .block(Block::default())
+                .alignment(Alignment::Center),
+            area,
+            buf,
+        );
     }
 }
 

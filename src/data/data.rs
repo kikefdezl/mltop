@@ -75,6 +75,12 @@ impl Data {
         }
     }
 
+    pub fn terminate_process(&self, pid: usize) {
+        if let Some(process) = self.sys.process(Pid::from(pid)) {
+            process.kill_with(Signal::Term);
+        }
+    }
+
     pub fn kill_process(&self, pid: usize) {
         if let Some(process) = self.sys.process(Pid::from(pid)) {
             process.kill_with(Signal::Kill);

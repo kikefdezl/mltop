@@ -98,6 +98,7 @@ impl Tui {
                 KeyCode::Up | KeyCode::Char('k') => self.move_up(),
                 KeyCode::Esc => self.deactivate(),
                 KeyCode::F(9) => self.kill_process(),
+                KeyCode::F(12) => self.terminate_process(),
                 _ => {}
             },
             KeyModifiers::CONTROL => match key_event.code {
@@ -161,6 +162,14 @@ impl Tui {
     fn move_up(&mut self) {
         self.state.move_up();
         self.render();
+    }
+
+    fn terminate_process(&mut self) {
+        if let Some(selected) = self.state.selected_row() {
+            if let Some(process) = self.data.processes.get(selected) {
+                self.data.terminate_process(process.pid as usize);
+            }
+        }
     }
 
     fn kill_process(&mut self) {
