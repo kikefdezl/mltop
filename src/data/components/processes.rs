@@ -34,10 +34,32 @@ pub struct Process {
 }
 
 #[derive(Clone)]
-pub struct Processes(pub Vec<Process>);
+enum ProcessesSortBy {
+    CPU,
+    _MEM,
+}
+
+impl ProcessesSortBy {
+    fn default() -> ProcessesSortBy {
+        Self::CPU
+    }
+}
+
+#[derive(Clone)]
+pub struct Processes {
+    processes: Vec<Process>,
+    sort_by: ProcessesSortBy,
+}
 
 impl Processes {
-    pub fn read(sys: &System, nvml: &Option<Nvml>) -> Processes {
+    pub fn new() -> Processes {
+        Self {
+            processes: vec![],
+            sort_by: ProcessesSortBy::default(),
+        }
+    }
+
+    pub fn update(&mut self, sys: &System, nvml: &Option<Nvml>) {
         let total_memory = sys.total_memory();
 
         let mut processes: HashMap<u32, Process> = sys
@@ -72,25 +94,25 @@ impl Processes {
             .collect();
 
         // find which ones are GPU and mark them as such
-        if nvml.is_none() {
-            return Processes(processes.into_values().collect());
-        }
-        let nvml = nvml.as_ref().unwrap();
+        if nvml.is_some() {
+            let nvml = nvml.as_ref().unwrap();
 
-        match Processes::gpu_compute_pids(&nvml) {
-            Ok(pids) => {
-                Processes::update_process_type(pids, &mut processes, ProcessType::GpuCompute)
+            match Processes::gpu_compute_pids(&nvml) {
+                Ok(pids) => {
+                    Self::update_process_type(pids, &mut processes, ProcessType::GpuCompute)
+                }
+                Err(_) => {}
             }
-            Err(_) => {}
-        }
-        match Processes::gpu_graphics_pids(&nvml) {
-            Ok(pids) => {
-                Processes::update_process_type(pids, &mut processes, ProcessType::GpuGraphic)
+            match Self::gpu_graphics_pids(&nvml) {
+                Ok(pids) => {
+                    Self::update_process_type(pids, &mut processes, ProcessType::GpuGraphic)
+                }
+                Err(_) => {}
             }
-            Err(_) => {}
         }
 
-        Processes(processes.into_values().collect())
+        self.processes = processes.into_values().collect();
+        self.sort();
     }
 
     fn gpu_compute_pids(nvml: &Nvml) -> Result<Vec<u32>, NvmlError> {
@@ -123,7 +145,39 @@ impl Processes {
         }
     }
 
+    pub fn sort(&mut self) {
+        match self.sort_by {
+            ProcessesSortBy::CPU => self
+                .processes
+                .sort_by(|a, b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap()),
+            ProcessesSortBy::_MEM => self
+                .processes
+                .sort_by(|a, b| b.memory_usage.partial_cmp(&a.memory_usage).unwrap()),
+        };
+    }
+
     pub fn into_iter(&self) -> IntoIter<Process> {
-        self.0.clone().into_iter()
+        self.processes.clone().into_iter()
+    }
+
+    fn len(&self) -> usize {
+        self.processes.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn get(&self, idx: usize) -> Option<&Process> {
+        match self.is_empty() {
+            true => None,
+            false => {
+                if idx >= self.len() {
+                    None
+                } else {
+                    Some(&self.processes[idx])
+                }
+            }
+        }
     }
 }

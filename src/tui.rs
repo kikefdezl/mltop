@@ -97,6 +97,7 @@ impl Tui {
                 KeyCode::Down | KeyCode::Char('j') => self.move_down(),
                 KeyCode::Up | KeyCode::Char('k') => self.move_up(),
                 KeyCode::Esc => self.deactivate(),
+                KeyCode::F(9) => self.kill_process(),
                 _ => {}
             },
             KeyModifiers::CONTROL => match key_event.code {
@@ -162,14 +163,22 @@ impl Tui {
         self.render();
     }
 
+    fn kill_process(&mut self) {
+        if let Some(selected) = self.state.selected_row() {
+            if let Some(process) = self.data.processes.get(selected) {
+                self.data.kill_process(process.pid as usize);
+            }
+        }
+    }
+
     fn update_data(&mut self) {
         // we don't update processes if the table is active, because
         // then it gets annoying to select the right row if the table
         // is refreshing while we move
-        let kind = match self.state.table_is_active() {
+        let update_kind = match self.state.table_is_active() {
             true => DataUpdateKind::all().without_processes(),
             false => DataUpdateKind::all(),
         };
-        self.data.update(&kind);
+        self.data.update(&update_kind);
     }
 }

@@ -3,7 +3,9 @@ use crate::data::components::gpu::Gpu;
 use crate::data::components::memory::Memory;
 use crate::data::components::processes::Processes;
 use nvml_wrapper::Nvml;
-use sysinfo::{CpuRefreshKind, MemoryRefreshKind, ProcessRefreshKind, RefreshKind, System};
+use sysinfo::{
+    CpuRefreshKind, MemoryRefreshKind, Pid, ProcessRefreshKind, RefreshKind, Signal, System,
+};
 
 use super::update_kind::DataUpdateKind;
 
@@ -38,11 +40,14 @@ impl Data {
             }
         };
 
+        let mut processes = Processes::new();
+        processes.update(&sys, &nvml);
+
         Data {
             cpu,
             memory: Memory::read(&sys),
             gpu,
-            processes: Processes::read(&sys, &nvml),
+            processes,
             sys,
             nvml,
         }
@@ -59,7 +64,7 @@ impl Data {
                 self.memory = Memory::read(&self.sys);
             }
             if kind.processes() {
-                self.processes = Processes::read(&self.sys, &self.nvml);
+                self.processes.update(&self.sys, &self.nvml);
             }
 
             if kind.gpu() {
@@ -67,6 +72,12 @@ impl Data {
                     let _ = gpu.update(&self.nvml);
                 }
             }
+        }
+    }
+
+    pub fn kill_process(&self, pid: usize) {
+        if let Some(process) = self.sys.process(Pid::from(pid)) {
+            process.kill_with(Signal::Kill);
         }
     }
 

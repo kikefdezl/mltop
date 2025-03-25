@@ -1,6 +1,5 @@
 use crate::data::components::processes::{Process, Processes};
 use crate::{constants::BYTES_PER_MB, data::components::processes::ProcessType};
-use itertools::Itertools;
 use ratatui::widgets::{StatefulWidget, TableState};
 use ratatui::{
     buffer::Buffer,
@@ -40,12 +39,9 @@ impl StatefulWidget for TableOfProcessesWidget<'_> {
             .style(header_style)
             .height(1);
 
-        let mut data = self.data.0.clone();
-        data.sort_by_key(|p| (p.cpu_usage * 1000.0) as u32);
         let rows: Vec<Row> = self
             .data
             .into_iter()
-            .sorted_by(|a, b| b.cpu_usage.total_cmp(&a.cpu_usage)) // TODO: allow user what to sort by
             .map(|data| Self::create_row(data))
             .collect();
 

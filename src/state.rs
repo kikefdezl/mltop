@@ -42,4 +42,8 @@ impl State {
             }
         }
     }
+
+    pub fn selected_row(&self) -> Option<usize> {
+        self.table_of_processes.selected()
+    }
 }
