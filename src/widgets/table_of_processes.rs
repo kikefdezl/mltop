@@ -1,4 +1,4 @@
-use crate::data::components::processes::{Process, Processes};
+use crate::data::components::processes::{Process, Processes, ProcessesSortBy};
 use crate::{constants::BYTES_PER_MB, data::components::processes::ProcessType};
 use ratatui::widgets::{StatefulWidget, TableState};
 use ratatui::{
@@ -12,8 +12,7 @@ use ratatui::{
 const GPU_COMPUTE_COLOR: Color = Color::Magenta;
 const GPU_GRAPHIC_COLOR: Color = Color::Yellow;
 
-const HEADER: [&str; 6] = ["   pid", "type", " CPU%", "  MEM%", "   MEMORY", "Command"];
-const FOOTER: [(&str, &str); 2] = [("F9", "SIGKILL"), ("F12", "SIGTERM")];
+const FOOTER: [(&str, &str); 3] = [("F6", "SortBy"), ("F9", "SIGKILL"), ("F12", "SIGTERM")];
 
 const CONSTRAINTS: [Constraint; 6] = [
     Constraint::Length(6),
@@ -40,7 +39,7 @@ impl StatefulWidget for TableOfProcessesWidget<'_> {
         let table_area = areas[0];
         let footer_area = areas[1];
 
-        let header = Self::create_header();
+        let header = self.create_header();
 
         let rows: Vec<Row> = self
             .data
@@ -62,10 +61,14 @@ impl TableOfProcessesWidget<'_> {
         TableOfProcessesWidget { data }
     }
 
-    fn create_header() -> Row<'static> {
+    fn create_header(&self) -> Row<'static> {
         let header_style = Style::default().fg(Color::Black).bg(Color::White);
+        let (cpu, mem) = match &self.data.sort_by {
+            ProcessesSortBy::CPU => ("▽CPU%", "  MEM%"),
+            ProcessesSortBy::MEM => (" CPU%", " ▽MEM%"),
+        };
 
-        HEADER
+        ["   pid", "type", cpu, mem, "   MEMORY", "Command"]
             .into_iter()
             .map(Cell::from)
             .collect::<Row>()
@@ -161,21 +164,28 @@ impl TableOfProcessesWidget<'_> {
     }
 
     fn render_footer(area: Rect, buf: &mut Buffer) {
-        let spans = FOOTER
+        let highlight_style = Style::new().bg(Color::White).fg(Color::Black);
+        let mut spans: Vec<Span> = FOOTER
             .iter()
-            .map(|f| {
+            .flat_map(|f| {
                 vec![
                     Span::raw(format!(" {}", f.0)),
-                    Span::styled(f.1, Style::new().bg(Color::Cyan).fg(Color::Black)),
+                    Span::styled(f.1, highlight_style),
                 ]
             })
-            .flatten()
-            .collect::<Vec<Span>>();
+            .collect();
+
+        let used_width: usize = spans.iter().map(|s| s.content.len()).sum();
+        let remaining_width = area.width.saturating_sub(used_width as u16);
+        spans.push(Span::styled(
+            " ".repeat(remaining_width as usize),
+            highlight_style,
+        ));
 
         <Paragraph as ratatui::widgets::Widget>::render(
             Paragraph::new(Line::from(spans))
                 .block(Block::default())
-                .alignment(Alignment::Center),
+                .alignment(Alignment::Left),
             area,
             buf,
         );

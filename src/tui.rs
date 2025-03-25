@@ -97,6 +97,7 @@ impl Tui {
                 KeyCode::Down | KeyCode::Char('j') => self.move_down(),
                 KeyCode::Up | KeyCode::Char('k') => self.move_up(),
                 KeyCode::Esc => self.deactivate(),
+                KeyCode::F(6) => self.toggle_sort_by(),
                 KeyCode::F(9) => self.kill_process(),
                 KeyCode::F(12) => self.terminate_process(),
                 _ => {}
@@ -162,6 +163,10 @@ impl Tui {
     fn move_up(&mut self) {
         self.state.move_up();
         self.render();
+    }
+
+    fn toggle_sort_by(&mut self) {
+        self.data.processes.toggle_sort_by()
     }
 
     fn terminate_process(&mut self) {
