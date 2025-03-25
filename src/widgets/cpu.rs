@@ -19,12 +19,14 @@ impl CpuWidget<'_> {
         CpuWidget { data }
     }
 
+    // returns the dimensions of a grid to fit all cpu cores
+    // in a pseudo-rectangular way (Rows, Cols)
     pub fn grid_dimensions(&self) -> (u16, u16) {
         let cores = self.data.cores.len();
-        let cpu_rows = fast_int_sqrt(cores) as u16;
-        let mut cpu_cols: u16 = 0;
-        while ((cpu_cols * cpu_rows) as usize) < cores {
-            cpu_cols += 1;
+        let cpu_cols = fast_int_sqrt(cores) as u16;
+        let mut cpu_rows: u16 = 0;
+        while ((cpu_rows * cpu_cols) as usize) < cores {
+            cpu_rows += 1;
         }
         (cpu_rows, cpu_cols)
     }
@@ -80,5 +82,53 @@ impl Widget for CpuWidget<'_> {
         let content = Text::from(lines);
 
         Paragraph::new(content).centered().render(area, buf);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Cpu;
+    use super::CpuWidget;
+    use crate::data::components::cpu::Core;
+
+    fn fake_cpu(cores: usize) -> Cpu {
+        Cpu {
+            usage: vec![0.0],
+            cores: vec![
+                Core {
+                    usage: 0.0,
+                    temp: 0.0
+                };
+                cores
+            ],
+        }
+    }
+
+    #[test]
+    fn test_grid_dimensions() {
+        let widget = CpuWidget { data: &fake_cpu(1) };
+        assert_eq!(widget.grid_dimensions(), (1, 1));
+
+        let widget = CpuWidget { data: &fake_cpu(2) };
+        assert_eq!(widget.grid_dimensions(), (2, 1));
+
+        let widget = CpuWidget { data: &fake_cpu(3) };
+        assert_eq!(widget.grid_dimensions(), (3, 1));
+
+        let widget = CpuWidget { data: &fake_cpu(4) };
+        assert_eq!(widget.grid_dimensions(), (2, 2));
+
+        let widget = CpuWidget { data: &fake_cpu(5) };
+        assert_eq!(widget.grid_dimensions(), (3, 2));
+
+        let widget = CpuWidget {
+            data: &fake_cpu(12),
+        };
+        assert_eq!(widget.grid_dimensions(), (4, 3));
+
+        let widget = CpuWidget {
+            data: &fake_cpu(16),
+        };
+        assert_eq!(widget.grid_dimensions(), (4, 4));
     }
 }

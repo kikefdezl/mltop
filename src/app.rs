@@ -119,7 +119,7 @@ impl App {
             let layout = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints(vec![
-                    Constraint::Length(cpu_widget.grid_dimensions().1),
+                    Constraint::Length(cpu_widget.grid_dimensions().1 + 1),
                     Constraint::Length(MEMORY_WIDGET_HEIGHT),
                     Constraint::Max(20),
                     Constraint::Length(GPU_WIDGET_HEIGHT),
