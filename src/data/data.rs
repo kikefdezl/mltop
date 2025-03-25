@@ -3,9 +3,13 @@ use crate::data::components::gpu::Gpu;
 use crate::data::components::memory::Memory;
 use crate::data::components::processes::Processes;
 use nvml_wrapper::Nvml;
-use sysinfo::{CpuRefreshKind, MemoryRefreshKind, ProcessRefreshKind, RefreshKind, System};
+use sysinfo::{
+    CpuRefreshKind, MemoryRefreshKind, Pid, ProcessRefreshKind, RefreshKind, Signal, System,
+};
 
-pub struct AppData {
+use super::update_kind::DataUpdateKind;
+
+pub struct Data {
     pub cpu: Cpu,
     pub memory: Memory,
     pub gpu: Option<Gpu>,
@@ -14,8 +18,8 @@ pub struct AppData {
     nvml: Option<Nvml>,
 }
 
-impl AppData {
-    pub fn new() -> AppData {
+impl Data {
+    pub fn new() -> Data {
         let mut sys = System::new();
 
         Self::refresh_system(&mut sys);
@@ -36,25 +40,50 @@ impl AppData {
             }
         };
 
-        AppData {
+        let mut processes = Processes::new();
+        processes.update(&sys, &nvml);
+
+        Data {
             cpu,
             memory: Memory::read(&sys),
             gpu,
-            processes: Processes::read(&sys, &nvml),
+            processes,
             sys,
             nvml,
         }
     }
 
-    pub fn update(&mut self) {
-        Self::refresh_system(&mut self.sys);
+    pub fn update(&mut self, kind: &DataUpdateKind) {
+        if kind.any() {
+            Self::refresh_system(&mut self.sys);
 
-        self.cpu.update(&self.sys);
-        self.memory = Memory::read(&self.sys);
-        self.processes = Processes::read(&self.sys, &self.nvml);
+            if kind.cpu() {
+                self.cpu.update(&self.sys);
+            }
+            if kind.memory() {
+                self.memory = Memory::read(&self.sys);
+            }
+            if kind.processes() {
+                self.processes.update(&self.sys, &self.nvml);
+            }
 
-        if let Some(gpu) = self.gpu.as_mut() {
-            let _ = gpu.update(&self.nvml);
+            if kind.gpu() {
+                if let Some(gpu) = self.gpu.as_mut() {
+                    let _ = gpu.update(&self.nvml);
+                }
+            }
+        }
+    }
+
+    pub fn terminate_process(&self, pid: usize) {
+        if let Some(process) = self.sys.process(Pid::from(pid)) {
+            process.kill_with(Signal::Term);
+        }
+    }
+
+    pub fn kill_process(&self, pid: usize) {
+        if let Some(process) = self.sys.process(Pid::from(pid)) {
+            process.kill_with(Signal::Kill);
         }
     }
 
