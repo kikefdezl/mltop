@@ -1,43 +1,43 @@
 use ratatui::widgets::TableState;
 
 pub struct State {
-    pub processes: TableState,
+    pub table_of_processes: TableState,
 }
 
 impl State {
     pub fn new() -> State {
         State {
-            processes: TableState::default(),
+            table_of_processes: TableState::default(),
         }
     }
 
-    pub fn active(&self) -> bool {
-        self.processes.selected().is_some()
+    pub fn table_is_active(&self) -> bool {
+        self.table_of_processes.selected().is_some()
     }
 
-    pub fn activate(&mut self) {
-        self.processes.select(Some(0))
+    pub fn activate_table(&mut self) {
+        self.table_of_processes.select(Some(0))
     }
 
-    pub fn deactivate(&mut self) {
-        self.processes.select(None)
+    pub fn deactivate_table(&mut self) {
+        self.table_of_processes.select(None)
     }
 
     pub fn move_down(&mut self) {
-        match self.processes.selected() {
-            None => self.activate(),
-            Some(s) => self.processes.select(Some(s + 1)),
+        match self.table_of_processes.selected() {
+            None => self.activate_table(),
+            Some(s) => self.table_of_processes.select(Some(s + 1)),
         };
     }
 
     pub fn move_up(&mut self) {
-        match self.processes.selected() {
-            None => self.activate(),
+        match self.table_of_processes.selected() {
+            None => self.activate_table(),
             Some(s) => {
                 if s <= 0 {
-                    self.processes.select(Some(s))
+                    self.table_of_processes.select(Some(s))
                 } else {
-                    self.processes.select(Some(s - 1))
+                    self.table_of_processes.select(Some(s - 1))
                 }
             }
         }

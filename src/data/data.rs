@@ -5,6 +5,8 @@ use crate::data::components::processes::Processes;
 use nvml_wrapper::Nvml;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, ProcessRefreshKind, RefreshKind, System};
 
+use super::update_kind::DataUpdateKind;
+
 pub struct Data {
     pub cpu: Cpu,
     pub memory: Memory,
@@ -46,15 +48,25 @@ impl Data {
         }
     }
 
-    pub fn update(&mut self) {
-        Self::refresh_system(&mut self.sys);
+    pub fn update(&mut self, kind: &DataUpdateKind) {
+        if kind.any() {
+            Self::refresh_system(&mut self.sys);
 
-        self.cpu.update(&self.sys);
-        self.memory = Memory::read(&self.sys);
-        self.processes = Processes::read(&self.sys, &self.nvml);
+            if kind.cpu() {
+                self.cpu.update(&self.sys);
+            }
+            if kind.memory() {
+                self.memory = Memory::read(&self.sys);
+            }
+            if kind.processes() {
+                self.processes = Processes::read(&self.sys, &self.nvml);
+            }
 
-        if let Some(gpu) = self.gpu.as_mut() {
-            let _ = gpu.update(&self.nvml);
+            if kind.gpu() {
+                if let Some(gpu) = self.gpu.as_mut() {
+                    let _ = gpu.update(&self.nvml);
+                }
+            }
         }
     }
 

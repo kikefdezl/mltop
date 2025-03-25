@@ -1,3 +1,4 @@
+use crate::data::update_kind::DataUpdateKind;
 use std::sync::mpsc::{self, Sender};
 use std::time::Duration;
 use std::{io, thread};
@@ -40,7 +41,7 @@ impl Tui {
     }
 
     pub fn run(&mut self) -> io::Result<()> {
-        self.data.update();
+        self.update_data();
         self.render();
         let (tx, rx) = mpsc::channel();
 
@@ -107,7 +108,7 @@ impl Tui {
     }
 
     fn handle_render_event(&mut self) -> io::Result<()> {
-        self.data.update();
+        self.update_data();
         self.render();
         Ok(())
     }
@@ -134,12 +135,16 @@ impl Tui {
             frame.render_widget(memory_widget, layout[1]);
             frame.render_widget(line_graph_widget, layout[2]);
             frame.render_widget(gpu_widget, layout[3]);
-            frame.render_stateful_widget(processes_widget, layout[4], &mut self.state.processes);
+            frame.render_stateful_widget(
+                processes_widget,
+                layout[4],
+                &mut self.state.table_of_processes,
+            );
         });
     }
 
     fn deactivate(&mut self) {
-        self.state.deactivate();
+        self.state.deactivate_table();
         self.render();
     }
 
@@ -155,5 +160,16 @@ impl Tui {
     fn move_up(&mut self) {
         self.state.move_up();
         self.render();
+    }
+
+    fn update_data(&mut self) {
+        // we don't update processes if the table is active, because
+        // then it gets annoying to select the right row if the table
+        // is refreshing while we move
+        let kind = match self.state.table_is_active() {
+            true => DataUpdateKind::all().without_processes(),
+            false => DataUpdateKind::all(),
+        };
+        self.data.update(&kind);
     }
 }
