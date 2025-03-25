@@ -95,6 +95,7 @@ impl Tui {
                 KeyCode::Char('q') => self.exit(),
                 KeyCode::Down | KeyCode::Char('j') => self.move_down(),
                 KeyCode::Up | KeyCode::Char('k') => self.move_up(),
+                KeyCode::Esc => self.deactivate(),
                 _ => {}
             },
             KeyModifiers::CONTROL => match key_event.code {
@@ -135,6 +136,11 @@ impl Tui {
             frame.render_widget(gpu_widget, layout[3]);
             frame.render_stateful_widget(processes_widget, layout[4], &mut self.state.processes);
         });
+    }
+
+    fn deactivate(&mut self) {
+        self.state.deactivate();
+        self.render();
     }
 
     fn exit(&mut self) {

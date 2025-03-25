@@ -1,16 +1,17 @@
-use app::App;
 use std::io;
+use tui::Tui;
 
-mod app;
 mod config;
 mod constants;
 mod data;
 mod event;
+mod state;
+mod tui;
 mod utils;
 mod widgets;
 
 fn main() -> io::Result<()> {
-    let mut app = App::new();
+    let mut app = Tui::new();
     let result = app.run();
     ratatui::restore();
     result

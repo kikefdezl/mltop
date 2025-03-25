@@ -5,7 +5,7 @@ use crate::data::components::processes::Processes;
 use nvml_wrapper::Nvml;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, ProcessRefreshKind, RefreshKind, System};
 
-pub struct AppData {
+pub struct Data {
     pub cpu: Cpu,
     pub memory: Memory,
     pub gpu: Option<Gpu>,
@@ -14,8 +14,8 @@ pub struct AppData {
     nvml: Option<Nvml>,
 }
 
-impl AppData {
-    pub fn new() -> AppData {
+impl Data {
+    pub fn new() -> Data {
         let mut sys = System::new();
 
         Self::refresh_system(&mut sys);
@@ -36,7 +36,7 @@ impl AppData {
             }
         };
 
-        AppData {
+        Data {
             cpu,
             memory: Memory::read(&sys),
             gpu,

@@ -1,12 +1,13 @@
 use crate::data::components::processes::{Process, Processes};
 use crate::{constants::BYTES_PER_MB, data::components::processes::ProcessType};
 use itertools::Itertools;
+use ratatui::widgets::{StatefulWidget, TableState};
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Rect},
-    style::{Color, Modifier, Style},
+    style::{Color, Modifier, Style, Stylize},
     text::{Line, Span, Text},
-    widgets::{Cell, Row, Table, Widget},
+    widgets::{Cell, Row, Table},
 };
 
 const GPU_COMPUTE_COLOR: Color = Color::Magenta;
@@ -26,8 +27,10 @@ pub struct TableOfProcessesWidget<'a> {
     data: &'a Processes,
 }
 
-impl Widget for TableOfProcessesWidget<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl StatefulWidget for TableOfProcessesWidget<'_> {
+    type State = TableState;
+
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let header_style = Style::default().fg(Color::Black).bg(Color::White);
 
         let header = HEADER
@@ -48,7 +51,8 @@ impl Widget for TableOfProcessesWidget<'_> {
 
         Table::new(rows, CONSTRAINTS)
             .header(header)
-            .render(area, buf);
+            .row_highlight_style(Style::new().reversed())
+            .render(area, buf, state);
     }
 }
 
