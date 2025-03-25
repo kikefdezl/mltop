@@ -97,6 +97,7 @@ impl Tui {
                 KeyCode::Down | KeyCode::Char('j') => self.move_down(),
                 KeyCode::Up | KeyCode::Char('k') => self.move_up(),
                 KeyCode::Esc => self.deactivate(),
+                KeyCode::F(6) => self.toggle_sort_by(),
                 KeyCode::F(9) => self.kill_process(),
                 KeyCode::F(12) => self.terminate_process(),
                 _ => {}
@@ -164,12 +165,17 @@ impl Tui {
         self.render();
     }
 
+    fn toggle_sort_by(&mut self) {
+        self.data.processes.toggle_sort_by()
+    }
+
     fn terminate_process(&mut self) {
         if let Some(selected) = self.state.selected_row() {
             if let Some(process) = self.data.processes.get(selected) {
                 self.data.terminate_process(process.pid as usize);
             }
         }
+        self.deactivate();
     }
 
     fn kill_process(&mut self) {
@@ -178,6 +184,7 @@ impl Tui {
                 self.data.kill_process(process.pid as usize);
             }
         }
+        self.deactivate();
     }
 
     fn update_data(&mut self) {

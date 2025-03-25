@@ -34,9 +34,9 @@ pub struct Process {
 }
 
 #[derive(Clone)]
-enum ProcessesSortBy {
+pub enum ProcessesSortBy {
     CPU,
-    _MEM,
+    MEM,
 }
 
 impl ProcessesSortBy {
@@ -48,7 +48,7 @@ impl ProcessesSortBy {
 #[derive(Clone)]
 pub struct Processes {
     processes: Vec<Process>,
-    sort_by: ProcessesSortBy,
+    pub sort_by: ProcessesSortBy,
 }
 
 impl Processes {
@@ -150,7 +150,7 @@ impl Processes {
             ProcessesSortBy::CPU => self
                 .processes
                 .sort_by(|a, b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap()),
-            ProcessesSortBy::_MEM => self
+            ProcessesSortBy::MEM => self
                 .processes
                 .sort_by(|a, b| b.memory_usage.partial_cmp(&a.memory_usage).unwrap()),
         };
@@ -178,6 +178,13 @@ impl Processes {
                     Some(&self.processes[idx])
                 }
             }
+        }
+    }
+
+    pub fn toggle_sort_by(&mut self) {
+        self.sort_by = match self.sort_by {
+            ProcessesSortBy::CPU => ProcessesSortBy::MEM,
+            ProcessesSortBy::MEM => ProcessesSortBy::CPU,
         }
     }
 }
