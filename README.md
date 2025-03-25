@@ -69,8 +69,6 @@ Once installed, run `mltop` in your terminal. The tool will run until you press 
 
 ## Roadmap
 
-- Sorting processes by GPU/CPU/MEM usage
-- Killing processes
 - Support for multiple GPUs
 - Support for other GPU vendors (AMD, Intel, etc.)
 - Interactive customization of UI/UX
