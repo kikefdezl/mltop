@@ -41,7 +41,6 @@ impl Tui {
     }
 
     pub fn run(&mut self) -> io::Result<()> {
-        self.update_data();
         self.render();
         let (tx, rx) = mpsc::channel();
 
