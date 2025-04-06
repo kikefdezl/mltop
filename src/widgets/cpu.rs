@@ -15,7 +15,7 @@ pub struct CpuWidget<'a> {
 }
 
 impl CpuWidget<'_> {
-    pub fn new<'a>(data: &Cpu) -> CpuWidget {
+    pub fn new(data: &Cpu) -> CpuWidget {
         CpuWidget { data }
     }
 

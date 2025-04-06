@@ -1,3 +1,4 @@
+pub mod action_bar;
 pub mod cpu;
 pub mod gpu;
 pub mod line_graph;

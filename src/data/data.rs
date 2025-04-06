@@ -99,4 +99,8 @@ impl Data {
             );
         sys.refresh_specifics(refresh_kind);
     }
+
+    pub fn has_gpu(&self) -> bool {
+        self.gpu.is_some()
+    }
 }
