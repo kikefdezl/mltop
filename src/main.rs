@@ -5,6 +5,7 @@ mod config;
 mod constants;
 mod data;
 mod event;
+mod message_bus;
 mod state;
 mod tui;
 mod utils;

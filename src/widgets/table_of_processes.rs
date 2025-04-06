@@ -3,7 +3,7 @@ use crate::{constants::BYTES_PER_MB, data::components::processes::ProcessType};
 use ratatui::widgets::{StatefulWidget, TableState};
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span, Text},
     widgets::{Cell, Row, Table},
