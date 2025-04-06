@@ -6,13 +6,11 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span, Text},
-    widgets::{Block, Cell, Paragraph, Row, Table},
+    widgets::{Cell, Row, Table},
 };
 
 const GPU_COMPUTE_COLOR: Color = Color::Magenta;
 const GPU_GRAPHIC_COLOR: Color = Color::Yellow;
-
-const FOOTER: [(&str, &str); 3] = [("F6", "SortBy"), ("F9", "SIGKILL"), ("F12", "SIGTERM")];
 
 const CONSTRAINTS: [Constraint; 6] = [
     Constraint::Length(6),
@@ -31,14 +29,6 @@ impl StatefulWidget for TableOfProcessesWidget<'_> {
     type State = TableState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let areas = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Min(0), Constraint::Length(1)]) // Footer takes one row
-            .split(area);
-
-        let table_area = areas[0];
-        let footer_area = areas[1];
-
         let header = self.create_header();
 
         let rows: Vec<Row> = self
@@ -50,9 +40,7 @@ impl StatefulWidget for TableOfProcessesWidget<'_> {
         Table::new(rows, CONSTRAINTS)
             .header(header)
             .row_highlight_style(Style::new().reversed())
-            .render(table_area, buf, state);
-
-        Self::render_footer(footer_area, buf);
+            .render(area, buf, state);
     }
 }
 
@@ -161,34 +149,6 @@ impl TableOfProcessesWidget<'_> {
         } else {
             Color::DarkGray
         }
-    }
-
-    fn render_footer(area: Rect, buf: &mut Buffer) {
-        let highlight_style = Style::new().bg(Color::White).fg(Color::Black);
-        let mut spans: Vec<Span> = FOOTER
-            .iter()
-            .flat_map(|f| {
-                vec![
-                    Span::raw(format!(" {}", f.0)),
-                    Span::styled(f.1, highlight_style),
-                ]
-            })
-            .collect();
-
-        let used_width: usize = spans.iter().map(|s| s.content.len()).sum();
-        let remaining_width = area.width.saturating_sub(used_width as u16);
-        spans.push(Span::styled(
-            " ".repeat(remaining_width as usize),
-            highlight_style,
-        ));
-
-        <Paragraph as ratatui::widgets::Widget>::render(
-            Paragraph::new(Line::from(spans))
-                .block(Block::default())
-                .alignment(Alignment::Left),
-            area,
-            buf,
-        );
     }
 }
 

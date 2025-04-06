@@ -1,12 +1,13 @@
-use crate::data::update_kind::DataUpdateKind;
 use std::sync::mpsc::{self, Sender};
 use std::time::Duration;
 use std::{io, thread};
 
 use crate::config::REFRESH_RATE_MILLIS;
 use crate::data::data::Data;
+use crate::data::update_kind::DataUpdateKind;
 use crate::event::Event;
 use crate::state::State;
+use crate::widgets::action_bar::ActionBarWidget;
 use crate::widgets::cpu::CpuWidget;
 use crate::widgets::gpu::{GpuWidget, GPU_WIDGET_HEIGHT};
 use crate::widgets::line_graph::LineGraphWidget;
@@ -121,9 +122,10 @@ impl Tui {
         let line_graph_widget = LineGraphWidget::new(&self.data.cpu, &self.data.gpu);
         let gpu_widget = GpuWidget::new(&self.data.gpu);
         let processes_widget = TableOfProcessesWidget::new(&self.data.processes);
+        let action_bar_widget = ActionBarWidget::new();
 
         let _ = self.terminal.draw(|frame| {
-            let layout = Layout::default()
+            let areas = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints(vec![
                     Constraint::Length(cpu_widget.grid_dimensions().0 + 1),
@@ -133,15 +135,25 @@ impl Tui {
                     Constraint::Min(0),
                 ])
                 .split(frame.area());
-            frame.render_widget(cpu_widget, layout[0]);
-            frame.render_widget(memory_widget, layout[1]);
-            frame.render_widget(line_graph_widget, layout[2]);
-            frame.render_widget(gpu_widget, layout[3]);
+            frame.render_widget(cpu_widget, areas[0]);
+            frame.render_widget(memory_widget, areas[1]);
+            frame.render_widget(line_graph_widget, areas[2]);
+            frame.render_widget(gpu_widget, areas[3]);
+
+            // take the remaining area and split it for the table of
+            // processes and the action bar.
+            // They are only rendered if there's enough vertical space
+            let remaining_areas = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Min(0), Constraint::Length(1)])
+                .split(areas[4]);
+
             frame.render_stateful_widget(
                 processes_widget,
-                layout[4],
+                remaining_areas[0],
                 &mut self.state.table_of_processes,
             );
+            frame.render_widget(action_bar_widget, remaining_areas[1]);
         });
     }
 
