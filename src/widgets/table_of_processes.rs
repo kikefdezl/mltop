@@ -34,6 +34,7 @@ impl StatefulWidget for TableOfProcessesWidget<'_> {
         let rows: Vec<Row> = self
             .data
             .into_iter()
+            .filter(|p| !p.is_thread())
             .map(|data| Self::create_row(data))
             .collect();
 

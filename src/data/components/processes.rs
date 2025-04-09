@@ -2,6 +2,7 @@ use nvml_wrapper::{error::NvmlError, Nvml};
 use std::collections::HashMap;
 use std::vec::IntoIter;
 use sysinfo::System;
+use sysinfo::ThreadKind;
 
 #[derive(Clone)]
 pub enum ProcessType {
@@ -21,6 +22,21 @@ impl ToString for ProcessType {
 }
 
 #[derive(Clone)]
+pub enum ThreadType {
+    User,
+    Kernel,
+}
+
+impl ThreadType {
+    fn from_sysinfo_thread_kind(kind: ThreadKind) -> ThreadType {
+        match kind {
+            ThreadKind::Kernel => ThreadType::Kernel,
+            ThreadKind::Userland => ThreadType::User,
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct Process {
     pub pid: u32,
     pub type_: ProcessType,
@@ -31,6 +47,13 @@ pub struct Process {
     pub memory: u64,
     // percentage 0-100%
     pub memory_usage: f32,
+    pub thread_type: Option<ThreadType>,
+}
+
+impl Process {
+    pub fn is_thread(&self) -> bool {
+        self.thread_type.is_some()
+    }
 }
 
 #[derive(Clone)]
@@ -88,6 +111,10 @@ impl Processes {
                         memory,
                         memory_usage: (memory as f32 / total_memory as f32) * 100.0,
                         cpu_usage: p.cpu_usage(),
+                        thread_type: match p.thread_kind() {
+                            Some(tk) => Some(ThreadType::from_sysinfo_thread_kind(tk)),
+                            None => None,
+                        },
                     },
                 ))
             })
