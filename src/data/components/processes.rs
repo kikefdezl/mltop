@@ -9,6 +9,14 @@ pub enum ProcessType {
     GpuGraphic,
     GpuCompute,
     Cpu,
+    UserThread,
+    KernelThread,
+}
+
+impl ProcessType {
+    fn is_thread(&self) -> bool {
+        matches!(self, ProcessType::UserThread | ProcessType::KernelThread)
+    }
 }
 
 impl ToString for ProcessType {
@@ -17,21 +25,10 @@ impl ToString for ProcessType {
             ProcessType::GpuGraphic => "GRAPHIC".to_string(),
             ProcessType::GpuCompute => "COMPUTE".to_string(),
             ProcessType::Cpu => "CPU".to_string(),
-        }
-    }
-}
-
-#[derive(Clone)]
-pub enum ThreadType {
-    User,
-    Kernel,
-}
-
-impl ThreadType {
-    fn from_sysinfo_thread_kind(kind: ThreadKind) -> ThreadType {
-        match kind {
-            ThreadKind::Kernel => ThreadType::Kernel,
-            ThreadKind::Userland => ThreadType::User,
+            // For now i'll display both thread types equally,
+            // I'm not sure if we really want to distiguish between the two
+            ProcessType::UserThread => "THREAD".to_string(),
+            ProcessType::KernelThread => "THREAD".to_string(),
         }
     }
 }
@@ -47,12 +44,11 @@ pub struct Process {
     pub memory: u64,
     // percentage 0-100%
     pub memory_usage: f32,
-    pub thread_type: Option<ThreadType>,
 }
 
 impl Process {
     pub fn is_thread(&self) -> bool {
-        self.thread_type.is_some()
+        self.type_.is_thread()
     }
 }
 
@@ -72,6 +68,7 @@ impl ProcessesSortBy {
 pub struct Processes {
     processes: Vec<Process>,
     pub sort_by: ProcessesSortBy,
+    show_threads: bool,
 }
 
 impl Processes {
@@ -79,6 +76,7 @@ impl Processes {
         Self {
             processes: vec![],
             sort_by: ProcessesSortBy::default(),
+            show_threads: false,
         }
     }
 
@@ -98,11 +96,22 @@ impl Processes {
                     return None;
                 }
 
+                let thread_kind = p.thread_kind();
+                if thread_kind.is_some() && !self.show_threads {
+                    return None;
+                }
+
                 Some((
                     pid,
                     Process {
                         pid,
-                        type_: ProcessType::Cpu,
+                        type_: match thread_kind {
+                            Some(tk) => match tk {
+                                ThreadKind::Kernel => ProcessType::KernelThread,
+                                ThreadKind::Userland => ProcessType::UserThread,
+                            },
+                            None => ProcessType::Cpu,
+                        },
                         command: cmd_list
                             .iter()
                             .map(|s| s.to_string())
@@ -111,10 +120,6 @@ impl Processes {
                         memory,
                         memory_usage: (memory as f32 / total_memory as f32) * 100.0,
                         cpu_usage: p.cpu_usage(),
-                        thread_type: match p.thread_kind() {
-                            Some(tk) => Some(ThreadType::from_sysinfo_thread_kind(tk)),
-                            None => None,
-                        },
                     },
                 ))
             })
@@ -124,7 +129,7 @@ impl Processes {
         if nvml.is_some() {
             let nvml = nvml.as_ref().unwrap();
 
-            match Processes::gpu_compute_pids(&nvml) {
+            match Self::gpu_compute_pids(&nvml) {
                 Ok(pids) => {
                     Self::update_process_type(pids, &mut processes, ProcessType::GpuCompute)
                 }
@@ -213,5 +218,9 @@ impl Processes {
             ProcessesSortBy::CPU => ProcessesSortBy::MEM,
             ProcessesSortBy::MEM => ProcessesSortBy::CPU,
         }
+    }
+
+    pub fn toggle_show_threads(&mut self) {
+        self.show_threads = !self.show_threads;
     }
 }
