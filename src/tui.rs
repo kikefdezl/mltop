@@ -110,6 +110,7 @@ impl Tui {
                 KeyCode::F(6) => self.toggle_sort_by(),
                 KeyCode::F(9) => self.kill_process(),
                 KeyCode::F(12) => self.terminate_process(),
+                KeyCode::Char('t') => self.toggle_threads(),
                 _ => {}
             },
             KeyModifiers::CONTROL => match key_event.code {
@@ -196,6 +197,10 @@ impl Tui {
 
     fn toggle_sort_by(&mut self) {
         self.data.processes.toggle_sort_by()
+    }
+
+    fn toggle_threads(&mut self) {
+        self.data.processes.toggle_show_threads()
     }
 
     fn terminate_process(&mut self) {

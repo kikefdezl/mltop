@@ -11,6 +11,7 @@ use ratatui::{
 
 const GPU_COMPUTE_COLOR: Color = Color::Magenta;
 const GPU_GRAPHIC_COLOR: Color = Color::Yellow;
+const THREAD_COLOR: Color = Color::DarkGray;
 
 const CONSTRAINTS: [Constraint; 6] = [
     Constraint::Length(6),
@@ -68,6 +69,8 @@ impl TableOfProcessesWidget<'_> {
         let color = match data.type_ {
             ProcessType::GpuGraphic => GPU_GRAPHIC_COLOR,
             ProcessType::GpuCompute => GPU_COMPUTE_COLOR,
+            ProcessType::UserThread => THREAD_COLOR,
+            ProcessType::KernelThread => THREAD_COLOR,
             _ => Color::White,
         };
 
