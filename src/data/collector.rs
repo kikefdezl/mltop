@@ -1,7 +1,7 @@
-use crate::data::components::cpu::Cpu;
-use crate::data::components::gpu::Gpu;
-use crate::data::components::memory::Memory;
-use crate::data::components::processes::Processes;
+use crate::data::models::cpu::Cpu;
+use crate::data::models::gpu::Gpu;
+use crate::data::models::memory::Memory;
+use crate::data::models::processes::Processes;
 use nvml_wrapper::Nvml;
 use sysinfo::{
     CpuRefreshKind, MemoryRefreshKind, Pid, ProcessRefreshKind, RefreshKind, Signal, System,
@@ -9,7 +9,7 @@ use sysinfo::{
 
 use super::update_kind::DataUpdateKind;
 
-pub struct Data {
+pub struct Collector {
     pub cpu: Cpu,
     pub memory: Memory,
     pub gpu: Option<Gpu>,
@@ -18,8 +18,8 @@ pub struct Data {
     nvml: Option<Nvml>,
 }
 
-impl Data {
-    pub fn new() -> Data {
+impl Collector {
+    pub fn new() -> Collector {
         let mut sys = System::new();
 
         Self::refresh_system(&mut sys);
@@ -43,7 +43,7 @@ impl Data {
         let mut processes = Processes::new();
         processes.update(&sys, &nvml);
 
-        Data {
+        Collector {
             cpu,
             memory: Memory::read(&sys),
             gpu,

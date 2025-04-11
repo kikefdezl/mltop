@@ -1,6 +1,7 @@
-use crate::data::components::processes::{Process, Processes, ProcessesSortBy};
-use crate::{constants::BYTES_PER_MB, data::components::processes::ProcessType};
-use ratatui::widgets::{StatefulWidget, TableState};
+use crate::data::models::processes::{Process, Processes};
+use crate::widgets::state::process_table::{ProcessTableState, ProcessesSortBy};
+use crate::{constants::BYTES_PER_MB, data::models::processes::ProcessType};
+use ratatui::widgets::StatefulWidget;
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Rect},
@@ -22,18 +23,20 @@ const CONSTRAINTS: [Constraint; 6] = [
     Constraint::Min(10),
 ];
 
-pub struct TableOfProcessesWidget<'a> {
+pub struct ProcessTableWidget<'a> {
     data: &'a Processes,
 }
 
-impl StatefulWidget for TableOfProcessesWidget<'_> {
-    type State = TableState;
+impl StatefulWidget for ProcessTableWidget<'_> {
+    type State = ProcessTableState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let header = self.create_header();
+        let header = self.create_header(&state);
 
-        let rows: Vec<Row> = self
-            .data
+        let processes = Self::sort_processes(self.data.into_vec(), &state.sort_by);
+        let processes = Self::filter_threads(processes, state.show_threads);
+
+        let rows: Vec<Row> = processes
             .into_iter()
             .map(|data| Self::create_row(data))
             .collect();
@@ -41,18 +44,18 @@ impl StatefulWidget for TableOfProcessesWidget<'_> {
         Table::new(rows, CONSTRAINTS)
             .header(header)
             .row_highlight_style(Style::new().reversed())
-            .render(area, buf, state);
+            .render(area, buf, &mut state.ratatui_table_state);
     }
 }
 
-impl TableOfProcessesWidget<'_> {
-    pub fn new<'a>(data: &'a Processes) -> TableOfProcessesWidget<'a> {
-        TableOfProcessesWidget { data }
+impl ProcessTableWidget<'_> {
+    pub fn new<'a>(data: &'a Processes) -> ProcessTableWidget<'a> {
+        ProcessTableWidget { data }
     }
 
-    fn create_header(&self) -> Row<'static> {
+    fn create_header(&self, state: &ProcessTableState) -> Row<'static> {
         let header_style = Style::default().fg(Color::Black).bg(Color::White);
-        let (cpu, mem) = match &self.data.sort_by {
+        let (cpu, mem) = match &state.sort_by {
             ProcessesSortBy::CPU => ("▽CPU%", "  MEM%"),
             ProcessesSortBy::MEM => (" CPU%", " ▽MEM%"),
         };
@@ -153,30 +156,64 @@ impl TableOfProcessesWidget<'_> {
             Color::DarkGray
         }
     }
+
+    // pub fn get_sorted_processes(&mut self, processes: &Processes, sort_by: ProcessesSortBy) -> &Processes {
+    //     match self.sort_by {
+    //         ProcessesSortBy::CPU => self
+    //             .processes
+    //             .sort_by(|a, b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap()),
+    //         ProcessesSortBy::MEM => self
+    //             .processes
+    //             .sort_by(|a, b| b.memory_usage.partial_cmp(&a.memory_usage).unwrap()),
+    //     };
+    // }
+
+    pub fn sort_processes(mut processes: Vec<Process>, sort_by: &ProcessesSortBy) -> Vec<Process> {
+        match sort_by {
+            ProcessesSortBy::CPU => {
+                processes.sort_by(|a, b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap())
+            }
+            ProcessesSortBy::MEM => {
+                processes.sort_by(|a, b| b.memory_usage.partial_cmp(&a.memory_usage).unwrap())
+            }
+        };
+        processes
+    }
+
+    pub fn filter_threads(processes: Vec<Process>, show_threads: bool) -> Vec<Process> {
+        if show_threads {
+            processes
+        } else {
+            processes
+                .into_iter()
+                .filter(|p| !p.is_thread())
+                .collect::<Vec<Process>>()
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::TableOfProcessesWidget;
+    use super::ProcessTableWidget;
 
     #[test]
     fn test_split_command() {
-        let (path, bin, args) = TableOfProcessesWidget::split_command("/usr/bin/mltop --help");
+        let (path, bin, args) = ProcessTableWidget::split_command("/usr/bin/mltop --help");
         assert_eq!(path, "/usr/bin/");
         assert_eq!(bin, "mltop");
         assert_eq!(args, "--help");
 
-        let (path, bin, args) = TableOfProcessesWidget::split_command("mltop");
+        let (path, bin, args) = ProcessTableWidget::split_command("mltop");
         assert_eq!(path, "");
         assert_eq!(bin, "mltop");
         assert_eq!(args, "");
 
-        let (path, bin, args) = TableOfProcessesWidget::split_command("/bin/bash -c 'echo hello'");
+        let (path, bin, args) = ProcessTableWidget::split_command("/bin/bash -c 'echo hello'");
         assert_eq!(path, "/bin/");
         assert_eq!(bin, "bash");
         assert_eq!(args, "-c 'echo hello'");
 
-        let (path, bin, args) = TableOfProcessesWidget::split_command("/usr/local/bin/python3");
+        let (path, bin, args) = ProcessTableWidget::split_command("/usr/local/bin/python3");
         assert_eq!(path, "/usr/local/bin/");
         assert_eq!(bin, "python3");
         assert_eq!(args, "");

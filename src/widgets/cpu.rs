@@ -1,4 +1,4 @@
-use crate::data::components::cpu::Cpu;
+use crate::data::models::cpu::Cpu;
 use crate::utils::fast_int_sqrt;
 use crate::widgets::percentage_bar::percentage_bar;
 
@@ -89,7 +89,7 @@ impl Widget for CpuWidget<'_> {
 mod tests {
     use super::Cpu;
     use super::CpuWidget;
-    use crate::data::components::cpu::Core;
+    use crate::data::models::cpu::Core;
 
     fn fake_cpu(cores: usize) -> Cpu {
         Cpu {
