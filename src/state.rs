@@ -1,49 +1,41 @@
-use ratatui::widgets::TableState;
+use crate::widgets::state::process_table::ProcessTableState;
 
 pub struct State {
-    pub table_of_processes: TableState,
+    pub process_table: ProcessTableState,
 }
 
 impl State {
     pub fn new() -> State {
         State {
-            table_of_processes: TableState::default(),
+            process_table: ProcessTableState::default(),
         }
     }
 
     pub fn table_is_active(&self) -> bool {
-        self.table_of_processes.selected().is_some()
-    }
-
-    pub fn activate_table(&mut self) {
-        self.table_of_processes.select(Some(0))
+        self.process_table.is_active()
     }
 
     pub fn deactivate_table(&mut self) {
-        self.table_of_processes.select(None)
+        self.process_table.deactivate()
     }
 
     pub fn move_down(&mut self) {
-        match self.table_of_processes.selected() {
-            None => self.activate_table(),
-            Some(s) => self.table_of_processes.select(Some(s + 1)),
-        };
+        self.process_table.move_down()
     }
 
     pub fn move_up(&mut self) {
-        match self.table_of_processes.selected() {
-            None => self.activate_table(),
-            Some(s) => {
-                if s <= 0 {
-                    self.table_of_processes.select(Some(s))
-                } else {
-                    self.table_of_processes.select(Some(s - 1))
-                }
-            }
-        }
+        self.process_table.move_up()
     }
 
     pub fn selected_row(&self) -> Option<usize> {
-        self.table_of_processes.selected()
+        self.process_table.selected_row()
+    }
+
+    pub fn toggle_sort_by(&mut self) {
+        self.process_table.toggle_sort_by();
+    }
+
+    pub fn toggle_show_threads(&mut self) {
+        self.process_table.toggle_show_threads();
     }
 }

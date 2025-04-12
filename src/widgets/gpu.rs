@@ -1,5 +1,5 @@
 use crate::constants::BYTES_PER_GB_FLOAT;
-use crate::data::components::gpu::Gpu;
+use crate::data::models::gpu::Gpu;
 use crate::widgets::percentage_bar::percentage_bar;
 
 use ratatui::{

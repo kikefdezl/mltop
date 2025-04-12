@@ -3,7 +3,7 @@ use std::time::Duration;
 use std::{io, thread};
 
 use crate::config::REFRESH_RATE_MILLIS;
-use crate::data::data::Data;
+use crate::data::collector::Collector;
 use crate::data::update_kind::DataUpdateKind;
 use crate::event::Event;
 use crate::message_bus::MessageBus;
@@ -13,7 +13,7 @@ use crate::widgets::cpu::CpuWidget;
 use crate::widgets::gpu::{GpuWidget, GPU_WIDGET_HEIGHT};
 use crate::widgets::line_graph::LineGraphWidget;
 use crate::widgets::memory::{MemoryWidget, MEMORY_WIDGET_HEIGHT};
-use crate::widgets::table_of_processes::TableOfProcessesWidget;
+use crate::widgets::process_table::ProcessTableWidget;
 
 use crossterm::event::{
     self, Event as CrosstermEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
@@ -25,7 +25,7 @@ use ratatui::{
 
 pub struct Tui {
     terminal: DefaultTerminal,
-    data: Data,
+    collector: Collector,
     state: State,
     message_bus: MessageBus,
     exit: bool,
@@ -36,14 +36,14 @@ impl Tui {
     pub fn new() -> Tui {
         let mut message_bus = MessageBus::new();
 
-        let data = Data::new();
+        let data = Collector::new();
         if !data.has_gpu() {
             message_bus.send("No GPU found.".to_string())
         }
 
         Tui {
             terminal: ratatui::init(),
-            data,
+            collector: data,
             state: State::new(),
             message_bus,
             exit: false,
@@ -107,9 +107,9 @@ impl Tui {
                 KeyCode::Down | KeyCode::Char('j') => self.move_down(),
                 KeyCode::Up | KeyCode::Char('k') => self.move_up(),
                 KeyCode::Esc => self.deactivate(),
+                KeyCode::F(5) => self.toggle_threads(),
                 KeyCode::F(6) => self.toggle_sort_by(),
                 KeyCode::F(9) => self.kill_process(),
-                KeyCode::F(12) => self.terminate_process(),
                 KeyCode::Char('t') => self.toggle_threads(),
                 _ => {}
             },
@@ -129,11 +129,11 @@ impl Tui {
     }
 
     fn render(&mut self) {
-        let cpu_widget = CpuWidget::new(&self.data.cpu);
-        let memory_widget = MemoryWidget::new(&self.data.memory);
-        let line_graph_widget = LineGraphWidget::new(&self.data.cpu, &self.data.gpu);
-        let gpu_widget = GpuWidget::new(&self.data.gpu);
-        let processes_widget = TableOfProcessesWidget::new(&self.data.processes);
+        let cpu_widget = CpuWidget::new(&self.collector.cpu);
+        let memory_widget = MemoryWidget::new(&self.collector.memory);
+        let line_graph_widget = LineGraphWidget::new(&self.collector.cpu, &self.collector.gpu);
+        let gpu_widget = GpuWidget::new(&self.collector.gpu);
+        let processes_widget = ProcessTableWidget::new(&self.collector.processes);
         let action_bar_widget = ActionBarWidget::new(self.message_bus.read());
 
         let _ = self.terminal.draw(|frame| {
@@ -142,7 +142,7 @@ impl Tui {
                 Constraint::Length(MEMORY_WIDGET_HEIGHT),
                 Constraint::Max(20),
             ];
-            if self.data.has_gpu() {
+            if self.collector.has_gpu() {
                 constraints.push(Constraint::Length(GPU_WIDGET_HEIGHT));
             }
             constraints.push(Constraint::Min(0));
@@ -155,7 +155,7 @@ impl Tui {
             frame.render_widget(cpu_widget, areas[0]);
             frame.render_widget(memory_widget, areas[1]);
             frame.render_widget(line_graph_widget, areas[2]);
-            if self.data.has_gpu() {
+            if self.collector.has_gpu() {
                 frame.render_widget(gpu_widget, areas[3]);
             }
 
@@ -170,7 +170,7 @@ impl Tui {
             frame.render_stateful_widget(
                 processes_widget,
                 remaining_areas[0],
-                &mut self.state.table_of_processes,
+                &mut self.state.process_table,
             );
             frame.render_widget(action_bar_widget, remaining_areas[1]);
         });
@@ -196,26 +196,27 @@ impl Tui {
     }
 
     fn toggle_sort_by(&mut self) {
-        self.data.processes.toggle_sort_by()
+        self.state.toggle_sort_by();
+        self.deactivate();
     }
 
     fn toggle_threads(&mut self) {
-        self.data.processes.toggle_show_threads()
-    }
-
-    fn terminate_process(&mut self) {
-        if let Some(selected) = self.state.selected_row() {
-            if let Some(process) = self.data.processes.get(selected) {
-                self.data.terminate_process(process.pid as usize);
-            }
-        }
+        self.state.toggle_show_threads();
         self.deactivate();
     }
 
     fn kill_process(&mut self) {
-        if let Some(selected) = self.state.selected_row() {
-            if let Some(process) = self.data.processes.get(selected) {
-                self.data.kill_process(process.pid as usize);
+        // TODO: Potentially the State could get out of sync with what is
+        // reflected in the table, so this could kill the wrong PID.
+        // A more robust solution is needed
+        if let Some(selected_row) = self.state.selected_row() {
+            if let Some(pid) = ProcessTableWidget::get_nth_pid(
+                self.collector.processes.into_vec(),
+                &self.state.process_table,
+                selected_row,
+            ) {
+                self.collector.kill_process(pid as usize);
+                self.message_bus.send(format!("Killed pid {}", pid));
             }
         }
         self.deactivate();
@@ -229,6 +230,6 @@ impl Tui {
             true => DataUpdateKind::all().without_processes(),
             false => DataUpdateKind::all(),
         };
-        self.data.update(&update_kind);
+        self.collector.update(&update_kind);
     }
 }

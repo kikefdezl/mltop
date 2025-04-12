@@ -1,5 +1,5 @@
 use crate::constants::BYTES_PER_GB;
-use crate::data::components::memory::Memory;
+use crate::data::models::memory::Memory;
 use crate::widgets::percentage_bar::percentage_bar;
 
 use ratatui::{

@@ -1,6 +1,6 @@
 use crate::config::GRAPH_X_AXIS_WINDOW_IN_SECONDS;
-use crate::data::components::cpu::Cpu;
-use crate::data::components::gpu::Gpu;
+use crate::data::models::cpu::Cpu;
+use crate::data::models::gpu::Gpu;
 use ratatui::layout::Constraint;
 
 use ratatui::style::{Color, Style};

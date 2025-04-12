@@ -1,6 +1,5 @@
 use nvml_wrapper::{error::NvmlError, Nvml};
 use std::collections::HashMap;
-use std::vec::IntoIter;
 use sysinfo::System;
 use sysinfo::ThreadKind;
 
@@ -53,31 +52,11 @@ impl Process {
 }
 
 #[derive(Clone)]
-pub enum ProcessesSortBy {
-    CPU,
-    MEM,
-}
-
-impl ProcessesSortBy {
-    fn default() -> ProcessesSortBy {
-        Self::CPU
-    }
-}
-
-#[derive(Clone)]
-pub struct Processes {
-    processes: Vec<Process>,
-    pub sort_by: ProcessesSortBy,
-    show_threads: bool,
-}
+pub struct Processes(Vec<Process>);
 
 impl Processes {
     pub fn new() -> Processes {
-        Self {
-            processes: vec![],
-            sort_by: ProcessesSortBy::default(),
-            show_threads: false,
-        }
+        Self(vec![])
     }
 
     pub fn update(&mut self, sys: &System, nvml: &Option<Nvml>) {
@@ -96,16 +75,11 @@ impl Processes {
                     return None;
                 }
 
-                let thread_kind = p.thread_kind();
-                if thread_kind.is_some() && !self.show_threads {
-                    return None;
-                }
-
                 Some((
                     pid,
                     Process {
                         pid,
-                        type_: match thread_kind {
+                        type_: match p.thread_kind() {
                             Some(tk) => match tk {
                                 ThreadKind::Kernel => ProcessType::KernelThread,
                                 ThreadKind::Userland => ProcessType::UserThread,
@@ -143,8 +117,7 @@ impl Processes {
             }
         }
 
-        self.processes = processes.into_values().collect();
-        self.sort();
+        self.0 = processes.into_values().collect();
     }
 
     fn gpu_compute_pids(nvml: &Nvml) -> Result<Vec<u32>, NvmlError> {
@@ -177,50 +150,7 @@ impl Processes {
         }
     }
 
-    pub fn sort(&mut self) {
-        match self.sort_by {
-            ProcessesSortBy::CPU => self
-                .processes
-                .sort_by(|a, b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap()),
-            ProcessesSortBy::MEM => self
-                .processes
-                .sort_by(|a, b| b.memory_usage.partial_cmp(&a.memory_usage).unwrap()),
-        };
-    }
-
-    pub fn into_iter(&self) -> IntoIter<Process> {
-        self.processes.clone().into_iter()
-    }
-
-    fn len(&self) -> usize {
-        self.processes.len()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    pub fn get(&self, idx: usize) -> Option<&Process> {
-        match self.is_empty() {
-            true => None,
-            false => {
-                if idx >= self.len() {
-                    None
-                } else {
-                    Some(&self.processes[idx])
-                }
-            }
-        }
-    }
-
-    pub fn toggle_sort_by(&mut self) {
-        self.sort_by = match self.sort_by {
-            ProcessesSortBy::CPU => ProcessesSortBy::MEM,
-            ProcessesSortBy::MEM => ProcessesSortBy::CPU,
-        }
-    }
-
-    pub fn toggle_show_threads(&mut self) {
-        self.show_threads = !self.show_threads;
+    pub fn into_vec(&self) -> Vec<Process> {
+        self.0.clone()
     }
 }
