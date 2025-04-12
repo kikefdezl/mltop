@@ -107,9 +107,9 @@ impl Tui {
                 KeyCode::Down | KeyCode::Char('j') => self.move_down(),
                 KeyCode::Up | KeyCode::Char('k') => self.move_up(),
                 KeyCode::Esc => self.deactivate(),
+                KeyCode::F(5) => self.toggle_threads(),
                 KeyCode::F(6) => self.toggle_sort_by(),
                 KeyCode::F(9) => self.kill_process(),
-                KeyCode::F(12) => self.terminate_process(),
                 KeyCode::Char('t') => self.toggle_threads(),
                 _ => {}
             },
@@ -196,26 +196,27 @@ impl Tui {
     }
 
     fn toggle_sort_by(&mut self) {
-        self.state.toggle_sort_by()
+        self.state.toggle_sort_by();
+        self.deactivate();
     }
 
     fn toggle_threads(&mut self) {
-        self.state.toggle_show_threads()
-    }
-
-    fn terminate_process(&mut self) {
-        if let Some(selected) = self.state.selected_row() {
-            if let Some(process) = self.collector.processes.get(selected) {
-                self.collector.terminate_process(process.pid as usize);
-            }
-        }
+        self.state.toggle_show_threads();
         self.deactivate();
     }
 
     fn kill_process(&mut self) {
-        if let Some(selected) = self.state.selected_row() {
-            if let Some(process) = self.collector.processes.get(selected) {
-                self.collector.kill_process(process.pid as usize);
+        // TODO: Potentially the State could get out of sync with what is
+        // reflected in the table, so this could kill the wrong PID.
+        // A more robust solution is needed
+        if let Some(selected_row) = self.state.selected_row() {
+            if let Some(pid) = ProcessTableWidget::get_nth_pid(
+                self.collector.processes.into_vec(),
+                &self.state.process_table,
+                selected_row,
+            ) {
+                self.collector.kill_process(pid as usize);
+                self.message_bus.send(format!("Killed pid {}", pid));
             }
         }
         self.deactivate();

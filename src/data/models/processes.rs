@@ -153,25 +153,4 @@ impl Processes {
     pub fn into_vec(&self) -> Vec<Process> {
         self.0.clone()
     }
-
-    fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    pub fn get(&self, idx: usize) -> Option<&Process> {
-        match self.is_empty() {
-            true => None,
-            false => {
-                if idx >= self.len() {
-                    None
-                } else {
-                    Some(&self.0[idx])
-                }
-            }
-        }
-    }
 }

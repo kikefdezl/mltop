@@ -7,7 +7,7 @@ use ratatui::{
     widgets::{Block, Paragraph},
 };
 
-const FOOTER: [(&str, &str); 3] = [("F6", "SortBy"), ("F9", "SIGKILL"), ("F12", "SIGTERM")];
+const FOOTER: [(&str, &str); 3] = [("F5", "Threads"), ("F6", "SortBy"), ("F9", "Kill")];
 const HIGHLIGHT_STYLE: Style = Style::new().bg(Color::White).fg(Color::Black);
 const MESSAGE_STYLE: Style = Style::new().bg(Color::Red).fg(Color::Black);
 

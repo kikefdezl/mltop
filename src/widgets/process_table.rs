@@ -33,8 +33,7 @@ impl StatefulWidget for ProcessTableWidget<'_> {
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let header = self.create_header(&state);
 
-        let processes = Self::sort_processes(self.data.into_vec(), &state.sort_by);
-        let processes = Self::filter_threads(processes, state.show_threads);
+        let processes = Self::process_data(self.data.into_vec(), &state);
 
         let rows: Vec<Row> = processes
             .into_iter()
@@ -157,16 +156,11 @@ impl ProcessTableWidget<'_> {
         }
     }
 
-    // pub fn get_sorted_processes(&mut self, processes: &Processes, sort_by: ProcessesSortBy) -> &Processes {
-    //     match self.sort_by {
-    //         ProcessesSortBy::CPU => self
-    //             .processes
-    //             .sort_by(|a, b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap()),
-    //         ProcessesSortBy::MEM => self
-    //             .processes
-    //             .sort_by(|a, b| b.memory_usage.partial_cmp(&a.memory_usage).unwrap()),
-    //     };
-    // }
+    pub fn process_data(processes: Vec<Process>, state: &ProcessTableState) -> Vec<Process> {
+        let mut processes = Self::sort_processes(processes.clone(), &state.sort_by);
+        processes = Self::filter_threads(processes, state.show_threads);
+        processes
+    }
 
     pub fn sort_processes(mut processes: Vec<Process>, sort_by: &ProcessesSortBy) -> Vec<Process> {
         match sort_by {
@@ -189,6 +183,14 @@ impl ProcessTableWidget<'_> {
                 .filter(|p| !p.is_thread())
                 .collect::<Vec<Process>>()
         }
+    }
+
+    pub fn get_nth_pid(
+        processes: Vec<Process>,
+        state: &ProcessTableState,
+        n: usize,
+    ) -> Option<u32> {
+        Some(Self::process_data(processes, &state).iter().nth(n)?.pid)
     }
 }
 

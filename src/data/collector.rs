@@ -3,9 +3,7 @@ use crate::data::models::gpu::Gpu;
 use crate::data::models::memory::Memory;
 use crate::data::models::processes::Processes;
 use nvml_wrapper::Nvml;
-use sysinfo::{
-    CpuRefreshKind, MemoryRefreshKind, Pid, ProcessRefreshKind, RefreshKind, Signal, System,
-};
+use sysinfo::{CpuRefreshKind, MemoryRefreshKind, Pid, ProcessRefreshKind, RefreshKind, System};
 
 use super::update_kind::DataUpdateKind;
 
@@ -75,15 +73,9 @@ impl Collector {
         }
     }
 
-    pub fn terminate_process(&self, pid: usize) {
-        if let Some(process) = self.sys.process(Pid::from(pid)) {
-            process.kill_with(Signal::Term);
-        }
-    }
-
     pub fn kill_process(&self, pid: usize) {
         if let Some(process) = self.sys.process(Pid::from(pid)) {
-            process.kill_with(Signal::Kill);
+            process.kill();
         }
     }
 
