@@ -38,32 +38,43 @@ impl Widget for CpuWidget<'_> {
 
         let usage = self.data.usage.last().unwrap();
         let text = format!("{:.1}%", usage);
-        let total_bar = percentage_bar(area.width - 21, *usage, &text);
+        let total_bar = percentage_bar(area.width - 16, *usage, &text);
         spans.extend(total_bar);
 
         let mut lines = vec![Line::from(spans).left_aligned()];
 
         let (cpu_rows, cpu_cols) = self.grid_dimensions();
-        let core_width = area.width / cpu_cols;
+
+        let total_width = area.width - 7;
+        let core_width: u16 = total_width / cpu_cols;
 
         for r in 0..cpu_rows {
-            let mut spans = vec![];
+            let mut spans = vec![Span::raw("     ")];
+
+            // this block makes the core bars wider to ensure that they
+            // occupy the full required width to be well aligned
+            let mut widths = vec![core_width; cpu_cols as usize];
+            let remain: u16 = total_width - widths.iter().sum::<u16>();
+            for i in 0..remain as usize {
+                widths[i] += 1;
+            }
+
             for c in 0..cpu_cols {
                 let i = (c * cpu_rows + r) as usize;
 
                 spans.push(Span::styled(
-                    format!(" {:>2}", i),
+                    format!("{:>2}", i),
                     Style::default().fg(Color::Cyan),
                 )); // cpu number
 
                 let text = format!("{:.1}%", self.data.cores[i].usage);
-                let bar = percentage_bar(core_width as u16 - 14, self.data.cores[i].usage, &text);
+                let bar = percentage_bar(widths[c as usize] - 9, self.data.cores[i].usage, &text);
                 spans.extend(bar);
 
                 let (temp_str, color) = if self.data.cores[i].temp == 0.0 {
-                    (" N/A   ".to_string(), Color::DarkGray)
+                    (" N/A ".to_string(), Color::DarkGray)
                 } else {
-                    let temp_str = format!("{:>5.1}°C", self.data.cores[i].temp);
+                    let temp_str = format!("{:>3.0}°C", self.data.cores[i].temp);
                     if self.data.cores[i].temp > 90.0 {
                         (temp_str, Color::Red)
                     } else if self.data.cores[i].temp > 80.0 {
@@ -81,7 +92,7 @@ impl Widget for CpuWidget<'_> {
 
         let content = Text::from(lines);
 
-        Paragraph::new(content).centered().render(area, buf);
+        Paragraph::new(content).left_aligned().render(area, buf);
     }
 }
 

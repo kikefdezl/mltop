@@ -32,7 +32,8 @@ impl Widget for MemoryWidget<'_> {
             self.data.used as f32 / BYTES_PER_GB as f32,
             self.data.total as f32 / BYTES_PER_GB as f32
         );
-        spans.extend(percentage_bar((area.width / 2) - 16, percentage, &text));
+        let mem_bar_width = (area.width / 2) - 14;
+        spans.extend(percentage_bar(mem_bar_width, percentage, &text));
 
         // swap
         spans.extend(vec![Span::styled(
@@ -45,7 +46,8 @@ impl Widget for MemoryWidget<'_> {
             self.data.used_swap as f32 / BYTES_PER_GB as f32,
             self.data.total_swap as f32 / BYTES_PER_GB as f32
         );
-        spans.extend(percentage_bar((area.width / 2) - 16, percentage, &text));
+        let swap_bar_width = area.width - mem_bar_width - 28;
+        spans.extend(percentage_bar(swap_bar_width, percentage, &text));
 
         Paragraph::new(Line::from(spans))
             .left_aligned()
