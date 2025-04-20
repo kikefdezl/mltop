@@ -59,6 +59,10 @@ impl Processes {
         Self(vec![])
     }
 
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     pub fn update(&mut self, sys: &System, nvml: &Option<Nvml>) {
         let total_memory = sys.total_memory();
 

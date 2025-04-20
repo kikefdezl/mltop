@@ -117,6 +117,10 @@ impl Tui {
                 KeyCode::Char('c') => self.exit(),
                 _ => {}
             },
+            KeyModifiers::SHIFT => match key_event.code {
+                KeyCode::Char('G') => self.go_to_last(),
+                _ => {}
+            },
             _ => {}
         }
     }
@@ -183,6 +187,12 @@ impl Tui {
 
     fn exit(&mut self) {
         self.exit = true;
+    }
+
+    fn go_to_last(&mut self) {
+        let n = self.collector.processes.len() - 1;
+        self.state.select_row(n);
+        self.render();
     }
 
     fn move_down(&mut self) {

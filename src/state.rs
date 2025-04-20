@@ -27,6 +27,10 @@ impl State {
         self.process_table.move_up()
     }
 
+    pub fn select_row(&mut self, n: usize) {
+        self.process_table.select(n);
+    }
+
     pub fn selected_row(&self) -> Option<usize> {
         self.process_table.selected_row()
     }
