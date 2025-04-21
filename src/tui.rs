@@ -4,8 +4,9 @@ use std::{io, thread};
 
 use crate::config::REFRESH_RATE_MILLIS;
 use crate::data::collector::Collector;
+use crate::data::store::{DataStore, StoredSnapshot};
 use crate::data::update_kind::DataUpdateKind;
-use crate::data::{Data, DataStore};
+use crate::data::Data;
 use crate::event::Event;
 use crate::message_bus::MessageBus;
 use crate::state::State;
@@ -258,7 +259,8 @@ impl Tui {
         };
 
         let data_snapshot = self.collector.collect(&update_kind);
-        self.data_store.save(data_snapshot.clone());
+        let stored = StoredSnapshot::from_data_snapshot(data_snapshot.clone());
+        self.data_store.save(stored);
         self.data.update_from_snapshot(data_snapshot);
     }
 }
