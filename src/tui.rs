@@ -5,15 +5,14 @@ use std::{io, thread};
 use crate::config::REFRESH_RATE_MILLIS;
 use crate::data::collector::Collector;
 use crate::data::update_kind::DataUpdateKind;
+use crate::data::{Data, DataStore};
 use crate::event::Event;
 use crate::message_bus::MessageBus;
 use crate::state::State;
-use crate::widgets::action_bar::ActionBarWidget;
-use crate::widgets::cpu::CpuWidget;
-use crate::widgets::gpu::{GpuWidget, GPU_WIDGET_HEIGHT};
-use crate::widgets::line_graph::LineGraphWidget;
-use crate::widgets::memory::{MemoryWidget, MEMORY_WIDGET_HEIGHT};
+use crate::widgets::gpu::GPU_WIDGET_HEIGHT;
+use crate::widgets::memory::MEMORY_WIDGET_HEIGHT;
 use crate::widgets::process_table::ProcessTableWidget;
+use crate::widgets::Widgets;
 
 use crossterm::event::{
     self, Event as CrosstermEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
@@ -24,34 +23,43 @@ use ratatui::{
 };
 
 pub struct Tui {
-    terminal: DefaultTerminal,
     collector: Collector,
-    state: State,
-    message_bus: MessageBus,
+    data: Data,
+    data_store: DataStore,
     exit: bool,
+    message_bus: MessageBus,
     refresh_rate_ms: u64,
+    state: State,
+    terminal: DefaultTerminal,
+    widgets: Widgets,
 }
 
 impl Tui {
     pub fn new() -> Tui {
         let mut message_bus = MessageBus::new();
 
-        let data = Collector::new();
-        if !data.has_gpu() {
+        let mut collector = Collector::new();
+        let data = Data::new_from_snapshot(collector.collect(&DataUpdateKind::all()));
+
+        if !collector.can_read_gpu() {
             message_bus.send("No GPU found.".to_string())
         }
 
         Tui {
-            terminal: ratatui::init(),
-            collector: data,
-            state: State::new(),
-            message_bus,
+            collector,
+            data,
+            data_store: DataStore::new(),
             exit: false,
+            message_bus,
             refresh_rate_ms: REFRESH_RATE_MILLIS,
+            state: State::new(),
+            terminal: ratatui::init(),
+            widgets: Widgets::new(),
         }
     }
 
     pub fn run(&mut self) -> io::Result<()> {
+        self.update_data();
         self.render();
         let (tx, rx) = mpsc::channel();
 
@@ -133,20 +141,13 @@ impl Tui {
     }
 
     fn render(&mut self) {
-        let cpu_widget = CpuWidget::new(&self.collector.cpu);
-        let memory_widget = MemoryWidget::new(&self.collector.memory);
-        let line_graph_widget = LineGraphWidget::new(&self.collector.cpu, &self.collector.gpu);
-        let gpu_widget = GpuWidget::new(&self.collector.gpu);
-        let processes_widget = ProcessTableWidget::new(&self.collector.processes);
-        let action_bar_widget = ActionBarWidget::new(self.message_bus.read());
-
         let _ = self.terminal.draw(|frame| {
             let mut constraints = vec![
-                Constraint::Length(cpu_widget.grid_dimensions().0 + 1),
+                Constraint::Length(self.widgets.cpu().grid_dimensions(&self.data.cpu).0 + 1),
                 Constraint::Length(MEMORY_WIDGET_HEIGHT),
                 Constraint::Max(20),
             ];
-            if self.collector.has_gpu() {
+            if self.collector.can_read_gpu() {
                 constraints.push(Constraint::Length(GPU_WIDGET_HEIGHT));
             }
             constraints.push(Constraint::Min(0));
@@ -156,11 +157,21 @@ impl Tui {
                 .constraints(constraints)
                 .split(frame.area());
 
-            frame.render_widget(cpu_widget, areas[0]);
-            frame.render_widget(memory_widget, areas[1]);
-            frame.render_widget(line_graph_widget, areas[2]);
-            if self.collector.has_gpu() {
-                frame.render_widget(gpu_widget, areas[3]);
+            self.widgets
+                .cpu()
+                .render(areas[0], frame.buffer_mut(), &self.data.cpu);
+            self.widgets
+                .memory()
+                .render(areas[1], frame.buffer_mut(), &self.data.memory);
+            self.widgets
+                .line_graph()
+                .render(areas[2], frame.buffer_mut(), &self.data_store);
+            if self.data.has_gpu() {
+                self.widgets.gpu().render(
+                    areas[3],
+                    frame.buffer_mut(),
+                    &self.data.gpu.clone().unwrap(), // TODO: Check if can avoid clone
+                );
             }
 
             // take the remaining area and split it for the table of
@@ -171,12 +182,17 @@ impl Tui {
                 .constraints([Constraint::Min(0), Constraint::Length(1)])
                 .split(*areas.last().unwrap());
 
-            frame.render_stateful_widget(
-                processes_widget,
+            self.widgets.process_table().render(
                 remaining_areas[0],
+                frame.buffer_mut(),
                 &mut self.state.process_table,
+                &self.data.processes,
             );
-            frame.render_widget(action_bar_widget, remaining_areas[1]);
+            self.widgets.action_bar.render(
+                remaining_areas[1],
+                frame.buffer_mut(),
+                self.message_bus.read(),
+            );
         });
     }
 
@@ -190,7 +206,7 @@ impl Tui {
     }
 
     fn go_to_last(&mut self) {
-        let n = self.collector.processes.len() - 1;
+        let n = self.data.processes.processes.len() - 1;
         self.state.select_row(n);
         self.render();
     }
@@ -221,7 +237,7 @@ impl Tui {
         // A more robust solution is needed
         if let Some(selected_row) = self.state.selected_row() {
             if let Some(pid) = ProcessTableWidget::get_nth_pid(
-                self.collector.processes.into_vec(),
+                self.data.processes.clone(),
                 &self.state.process_table,
                 selected_row,
             ) {
@@ -240,6 +256,9 @@ impl Tui {
             true => DataUpdateKind::all().without_processes(),
             false => DataUpdateKind::all(),
         };
-        self.collector.update(&update_kind);
+
+        let data_snapshot = self.collector.collect(&update_kind);
+        self.data_store.save(data_snapshot.clone());
+        self.data.update_from_snapshot(data_snapshot);
     }
 }

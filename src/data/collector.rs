@@ -1,98 +1,78 @@
-use crate::data::models::cpu::Cpu;
-use crate::data::models::gpu::Gpu;
-use crate::data::models::memory::Memory;
-use crate::data::models::processes::Processes;
-use nvml_wrapper::Nvml;
-use sysinfo::{CpuRefreshKind, MemoryRefreshKind, Pid, ProcessRefreshKind, RefreshKind, System};
+use super::cpu::CpuSnapshot;
+use super::gpu::GpuSnapshot;
+use super::memory::MemorySnapshot;
+use super::processes::ProcessesSnapshot;
+use super::system::System;
 
-use super::update_kind::DataUpdateKind;
+use sysinfo::Pid;
+
+use super::{update_kind::DataUpdateKind, DataSnapshot};
 
 pub struct Collector {
-    pub cpu: Cpu,
-    pub memory: Memory,
-    pub gpu: Option<Gpu>,
-    pub processes: Processes,
-    sys: System,
-    nvml: Option<Nvml>,
+    system: System,
 }
 
 impl Collector {
     pub fn new() -> Collector {
-        let mut sys = System::new();
+        let mut system = System::new();
+        system.refresh(&DataUpdateKind::all());
 
-        Self::refresh_system(&mut sys);
-
-        let mut cpu = Cpu::new();
-        cpu.update(&sys);
-
-        let nvml = match Nvml::init() {
-            Ok(n) => Some(n),
-            Err(_) => None,
-        };
-
-        let gpu = match Gpu::new(&nvml) {
-            Err(_) => None,
-            Ok(mut g) => {
-                let _ = g.update(&nvml);
-                Some(g)
-            }
-        };
-
-        let mut processes = Processes::new();
-        processes.update(&sys, &nvml);
-
-        Collector {
-            cpu,
-            memory: Memory::read(&sys),
-            gpu,
-            processes,
-            sys,
-            nvml,
-        }
-    }
-
-    pub fn update(&mut self, kind: &DataUpdateKind) {
-        if kind.any() {
-            Self::refresh_system(&mut self.sys);
-
-            if kind.cpu() {
-                self.cpu.update(&self.sys);
-            }
-            if kind.memory() {
-                self.memory = Memory::read(&self.sys);
-            }
-            if kind.processes() {
-                self.processes.update(&self.sys, &self.nvml);
-            }
-
-            if kind.gpu() {
-                if let Some(gpu) = self.gpu.as_mut() {
-                    let _ = gpu.update(&self.nvml);
-                }
-            }
-        }
+        Collector { system }
     }
 
     pub fn kill_process(&self, pid: usize) {
-        if let Some(process) = self.sys.process(Pid::from(pid)) {
+        if let Some(process) = self.system.sys.process(Pid::from(pid)) {
             process.kill();
         }
     }
 
-    fn refresh_system(sys: &mut System) {
-        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-        let refresh_kind = RefreshKind::new()
-            .with_cpu(CpuRefreshKind::new().with_cpu_usage())
-            .with_memory(MemoryRefreshKind::everything())
-            .with_processes(
-                ProcessRefreshKind::everything(), // .with_cpu()
-                                                  // .with_memory()
-                                                  // .with_cmd(sysinfo::UpdateKind::OnlyIfNotSet),
-            );
-        sys.refresh_specifics(refresh_kind);
+    pub fn collect(&mut self, kind: &DataUpdateKind) -> DataSnapshot {
+        self.system.refresh(kind);
+
+        let cpu = if kind.cpu() {
+            Some(CpuSnapshot::from_sysinfo(&self.system.sys))
+        } else {
+            None
+        };
+
+        let memory = if kind.memory() {
+            Some(MemorySnapshot::from_sysinfo(&self.system.sys))
+        } else {
+            None
+        };
+
+        let gpu = if kind.gpu() {
+            match &self.system.nvml {
+                Some(n) => {
+                    let result = GpuSnapshot::from_nvml(&n);
+                    match result {
+                        Ok(g) => Some(g),
+                        Err(_) => None,
+                    }
+                }
+                None => None,
+            }
+        } else {
+            None
+        };
+
+        let processes = if kind.processes() {
+            Some(ProcessesSnapshot::from_sysinfo_nvml(
+                &self.system.sys,
+                self.system.nvml.as_ref(),
+            ))
+        } else {
+            None
+        };
+        DataSnapshot {
+            cpu,
+            memory,
+            gpu,
+            processes,
+        }
     }
 
-    pub fn has_gpu(&self) -> bool {
-        self.gpu.is_some()
+    pub fn can_read_gpu(&self) -> bool {
+        self.system.nvml.is_some()
     }
 }
