@@ -1,7 +1,7 @@
 use crate::data::update_kind::DataUpdateKind;
 use nvml_wrapper::Nvml;
-use sysinfo::System as SysinfoSystem;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, Pid, ProcessRefreshKind, RefreshKind};
+use sysinfo::{System as SysinfoSystem, UpdateKind};
 
 pub struct System {
     pub sys: SysinfoSystem,
@@ -27,7 +27,12 @@ impl System {
             RefreshKind::new()
                 .with_cpu(CpuRefreshKind::new().with_cpu_usage())
                 .with_memory(MemoryRefreshKind::everything())
-                .with_processes(ProcessRefreshKind::everything())
+                .with_processes(
+                    ProcessRefreshKind::new()
+                        .with_cpu()
+                        .with_memory()
+                        .with_cmd(UpdateKind::OnlyIfNotSet),
+                )
         } else {
             RefreshKind::new()
                 .with_cpu(CpuRefreshKind::new().with_cpu_usage())
