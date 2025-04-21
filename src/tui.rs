@@ -242,7 +242,7 @@ impl Tui {
                 &self.state.process_table,
                 selected_row,
             ) {
-                self.collector.kill_process(pid as usize);
+                self.collector.system.kill_process(pid as usize);
                 self.message_bus.send(format!("Killed pid {}", pid));
             }
         }

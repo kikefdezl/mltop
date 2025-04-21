@@ -4,12 +4,10 @@ use super::memory::MemorySnapshot;
 use super::processes::ProcessesSnapshot;
 use super::system::System;
 
-use sysinfo::Pid;
-
 use super::{update_kind::DataUpdateKind, DataSnapshot};
 
 pub struct Collector {
-    system: System,
+    pub system: System,
 }
 
 impl Collector {
@@ -18,12 +16,6 @@ impl Collector {
         system.refresh(&DataUpdateKind::all());
 
         Collector { system }
-    }
-
-    pub fn kill_process(&self, pid: usize) {
-        if let Some(process) = self.system.sys.process(Pid::from(pid)) {
-            process.kill();
-        }
     }
 
     pub fn collect(&mut self, kind: &DataUpdateKind) -> DataSnapshot {

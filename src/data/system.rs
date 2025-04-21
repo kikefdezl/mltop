@@ -1,7 +1,7 @@
 use crate::data::update_kind::DataUpdateKind;
 use nvml_wrapper::Nvml;
 use sysinfo::System as SysinfoSystem;
-use sysinfo::{CpuRefreshKind, MemoryRefreshKind, ProcessRefreshKind, RefreshKind};
+use sysinfo::{CpuRefreshKind, MemoryRefreshKind, Pid, ProcessRefreshKind, RefreshKind};
 
 pub struct System {
     pub sys: SysinfoSystem,
@@ -34,5 +34,11 @@ impl System {
                 .with_memory(MemoryRefreshKind::everything())
         };
         self.sys.refresh_specifics(refresh_kind);
+    }
+
+    pub fn kill_process(&self, pid: usize) {
+        if let Some(process) = self.sys.process(Pid::from(pid)) {
+            process.kill();
+        }
     }
 }
