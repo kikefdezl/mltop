@@ -32,7 +32,7 @@ impl ProcessTableState {
     }
 
     pub fn activate(&mut self) {
-        self.ratatui_table_state.select(Some(0))
+        self.select(0);
     }
 
     pub fn deactivate(&mut self) {
@@ -44,6 +44,10 @@ impl ProcessTableState {
             None => self.activate(),
             Some(s) => self.ratatui_table_state.select(Some(s + 1)),
         };
+    }
+
+    pub fn select(&mut self, n: usize) {
+        self.ratatui_table_state.select(Some(n));
     }
 
     pub fn move_up(&mut self) {

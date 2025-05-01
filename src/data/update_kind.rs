@@ -24,10 +24,6 @@ impl DataUpdateKind {
         }
     }
 
-    pub fn any(&self) -> bool {
-        self.cpu || self.memory || self.gpu || self.processes
-    }
-
     pub fn cpu(&self) -> bool {
         self.cpu
     }

@@ -1,6 +1,5 @@
 use crate::config::GRAPH_X_AXIS_WINDOW_IN_SECONDS;
-use crate::data::models::cpu::Cpu;
-use crate::data::models::gpu::Gpu;
+use crate::data::store::{DataStore, StoredSnapshot};
 use ratatui::layout::Constraint;
 
 use ratatui::style::{Color, Style};
@@ -12,72 +11,67 @@ use ratatui::{
     widgets::{Axis, Block, BorderType, Chart, Dataset},
 };
 
-pub struct LineGraphWidget<'a> {
-    cpu_data: &'a Cpu,
-    gpu_data: &'a Option<Gpu>,
-}
+pub struct LineGraphWidget {}
 
-impl LineGraphWidget<'_> {
-    pub fn new<'a>(cpu_data: &'a Cpu, gpu_data: &'a Option<Gpu>) -> LineGraphWidget<'a> {
-        LineGraphWidget { cpu_data, gpu_data }
+impl LineGraphWidget {
+    pub fn new() -> LineGraphWidget {
+        LineGraphWidget {}
     }
 }
 
-impl Widget for LineGraphWidget<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl LineGraphWidget {
+    pub fn render(&self, area: Rect, buf: &mut Buffer, data: &DataStore) {
         let mut datasets = vec![];
 
-        let gpu_mem_data: Option<Vec<(f64, f64)>> = self.gpu_data.as_ref().map(|gpu| {
-            gpu.used_memory
-                .iter()
-                .rev()
-                .take(GRAPH_X_AXIS_WINDOW_IN_SECONDS)
-                .rev()
-                .enumerate()
-                .map(|(t, &x)| (t as f64, (x as f64 / gpu.max_memory as f64) * 100.0))
-                .collect()
-        });
-        if let Some(ref gpu_mem_data) = gpu_mem_data {
+        let data: Vec<&StoredSnapshot> = data
+            .snapshots
+            .iter()
+            .rev()
+            .take(GRAPH_X_AXIS_WINDOW_IN_SECONDS)
+            .rev()
+            .collect();
+
+        // TODO: See if we can avoid cloning here
+        let gpu_mem_data: Vec<(f64, f64)> = data
+            .iter()
+            .filter_map(|s| s.gpu_mem_use)
+            .enumerate()
+            .map(|(t, g)| (t as f64, g as f64))
+            .collect();
+
+        let gpu_use_data: Vec<(f64, f64)> = data
+            .iter()
+            .filter_map(|s| s.gpu_use)
+            .enumerate()
+            .map(|(t, g)| (t as f64, g as f64))
+            .collect();
+
+        if !gpu_mem_data.is_empty() {
             datasets.push(
                 Dataset::default()
                     .name("GPU MEM%")
                     .marker(symbols::Marker::Braille)
                     .style(Style::default().fg(Color::Yellow))
                     .graph_type(GraphType::Line)
-                    .data(gpu_mem_data),
+                    .data(&gpu_mem_data),
             );
         }
 
-        let gpu_use_data: Option<Vec<(f64, f64)>> = self.gpu_data.as_ref().map(|gpu| {
-            gpu.utilization
-                .iter()
-                .rev()
-                .take(GRAPH_X_AXIS_WINDOW_IN_SECONDS)
-                .rev()
-                .enumerate()
-                .map(|(t, &x)| (t as f64, x as f64))
-                .collect()
-        });
-        if let Some(ref gpu_data) = gpu_use_data {
+        if !gpu_use_data.is_empty() {
             datasets.push(
                 Dataset::default()
                     .name("GPU %")
                     .marker(symbols::Marker::Braille)
                     .style(Style::default().fg(Color::Blue))
                     .graph_type(GraphType::Line)
-                    .data(gpu_data),
+                    .data(&gpu_use_data),
             );
         }
 
-        let cpu_data: Vec<(f64, f64)> = self
-            .cpu_data
-            .usage
+        let cpu_data: Vec<(f64, f64)> = data
             .iter()
-            .rev()
-            .take(GRAPH_X_AXIS_WINDOW_IN_SECONDS)
-            .rev()
             .enumerate()
-            .map(|(t, &x)| (t as f64, x as f64))
+            .map(|(t, s)| (t as f64, s.cpu_use as f64))
             .collect();
 
         datasets.push(

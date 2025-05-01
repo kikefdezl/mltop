@@ -11,12 +11,14 @@ const FOOTER: [(&str, &str); 3] = [("F5", "Threads"), ("F6", "SortBy"), ("F9", "
 const HIGHLIGHT_STYLE: Style = Style::new().bg(Color::White).fg(Color::Black);
 const MESSAGE_STYLE: Style = Style::new().bg(Color::Red).fg(Color::Black);
 
-pub struct ActionBarWidget<'a> {
-    message: Option<&'a str>,
-}
+pub struct ActionBarWidget {}
 
-impl Widget for ActionBarWidget<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl ActionBarWidget {
+    pub fn new() -> ActionBarWidget {
+        ActionBarWidget {}
+    }
+
+    pub fn render(&self, area: Rect, buf: &mut Buffer, message: Option<&str>) {
         let mut spans: Vec<Span> = FOOTER
             .iter()
             .flat_map(|f| {
@@ -28,7 +30,7 @@ impl Widget for ActionBarWidget<'_> {
             .collect();
 
         let used_width: usize = spans.iter().map(|s| s.content.len()).sum();
-        let message_width: usize = match self.message {
+        let message_width: usize = match message {
             None => 0,
             Some(m) => m.len() + 2,
         };
@@ -40,7 +42,7 @@ impl Widget for ActionBarWidget<'_> {
             " ".repeat(fill_width as usize),
             HIGHLIGHT_STYLE,
         ));
-        if let Some(m) = self.message {
+        if let Some(m) = message {
             spans.push(Span::styled(format!(" {} ", m), MESSAGE_STYLE));
         }
 
@@ -48,11 +50,5 @@ impl Widget for ActionBarWidget<'_> {
             .block(Block::default())
             .alignment(Alignment::Left)
             .render(area, buf);
-    }
-}
-
-impl ActionBarWidget<'_> {
-    pub fn new<'a>(message: Option<&'a str>) -> ActionBarWidget<'a> {
-        ActionBarWidget { message }
     }
 }

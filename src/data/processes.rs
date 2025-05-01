@@ -52,14 +52,12 @@ impl Process {
 }
 
 #[derive(Clone)]
-pub struct Processes(Vec<Process>);
+pub struct ProcessesSnapshot {
+    pub processes: Vec<Process>,
+}
 
-impl Processes {
-    pub fn new() -> Processes {
-        Self(vec![])
-    }
-
-    pub fn update(&mut self, sys: &System, nvml: &Option<Nvml>) {
+impl ProcessesSnapshot {
+    pub fn from_sysinfo_nvml(sys: &System, nvml: Option<&Nvml>) -> ProcessesSnapshot {
         let total_memory = sys.total_memory();
 
         let mut processes: HashMap<u32, Process> = sys
@@ -103,54 +101,48 @@ impl Processes {
         if nvml.is_some() {
             let nvml = nvml.as_ref().unwrap();
 
-            match Self::gpu_compute_pids(&nvml) {
-                Ok(pids) => {
-                    Self::update_process_type(pids, &mut processes, ProcessType::GpuCompute)
-                }
+            match _gpu_compute_pids(&nvml) {
+                Ok(pids) => _update_process_type(pids, &mut processes, ProcessType::GpuCompute),
                 Err(_) => {}
             }
-            match Self::gpu_graphics_pids(&nvml) {
-                Ok(pids) => {
-                    Self::update_process_type(pids, &mut processes, ProcessType::GpuGraphic)
-                }
+            match _gpu_graphics_pids(&nvml) {
+                Ok(pids) => _update_process_type(pids, &mut processes, ProcessType::GpuGraphic),
                 Err(_) => {}
             }
         }
 
-        self.0 = processes.into_values().collect();
-    }
-
-    fn gpu_compute_pids(nvml: &Nvml) -> Result<Vec<u32>, NvmlError> {
-        let device = nvml.device_by_index(0)?;
-        Ok(device
-            .running_compute_processes()?
-            .iter()
-            .map(|pi| pi.pid)
-            .collect())
-    }
-
-    fn gpu_graphics_pids(nvml: &Nvml) -> Result<Vec<u32>, NvmlError> {
-        let device = nvml.device_by_index(0)?;
-        Ok(device
-            .running_graphics_processes()?
-            .iter()
-            .map(|pi| pi.pid)
-            .collect())
-    }
-
-    fn update_process_type(
-        pids: Vec<u32>,
-        processes: &mut HashMap<u32, Process>,
-        process_type: ProcessType,
-    ) {
-        for pid in pids {
-            if let Some(obj) = processes.get_mut(&pid) {
-                obj.type_ = process_type.clone();
-            }
+        ProcessesSnapshot {
+            processes: processes.into_values().collect(),
         }
     }
+}
 
-    pub fn into_vec(&self) -> Vec<Process> {
-        self.0.clone()
+fn _gpu_compute_pids(nvml: &Nvml) -> Result<Vec<u32>, NvmlError> {
+    let device = nvml.device_by_index(0)?;
+    Ok(device
+        .running_compute_processes()?
+        .iter()
+        .map(|pi| pi.pid)
+        .collect())
+}
+
+fn _gpu_graphics_pids(nvml: &Nvml) -> Result<Vec<u32>, NvmlError> {
+    let device = nvml.device_by_index(0)?;
+    Ok(device
+        .running_graphics_processes()?
+        .iter()
+        .map(|pi| pi.pid)
+        .collect())
+}
+
+fn _update_process_type(
+    pids: Vec<u32>,
+    processes: &mut HashMap<u32, Process>,
+    process_type: ProcessType,
+) {
+    for pid in pids {
+        if let Some(obj) = processes.get_mut(&pid) {
+            obj.type_ = process_type.clone();
+        }
     }
 }

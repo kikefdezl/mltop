@@ -1,6 +1,6 @@
-use crate::data::models::processes::{Process, Processes};
+use crate::constants::BYTES_PER_MB;
+use crate::data::processes::{Process, ProcessType, ProcessesSnapshot};
 use crate::widgets::state::process_table::{ProcessTableState, ProcessesSortBy};
-use crate::{constants::BYTES_PER_MB, data::models::processes::ProcessType};
 use ratatui::widgets::StatefulWidget;
 use ratatui::{
     buffer::Buffer,
@@ -23,33 +23,30 @@ const CONSTRAINTS: [Constraint; 6] = [
     Constraint::Min(10),
 ];
 
-pub struct ProcessTableWidget<'a> {
-    data: &'a Processes,
-}
+pub struct ProcessTableWidget {}
 
-impl StatefulWidget for ProcessTableWidget<'_> {
-    type State = ProcessTableState;
+impl ProcessTableWidget {
+    pub fn new() -> ProcessTableWidget {
+        ProcessTableWidget {}
+    }
 
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+    pub fn render(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        state: &mut ProcessTableState,
+        data: &ProcessesSnapshot,
+    ) {
         let header = self.create_header(&state);
 
-        let processes = Self::process_data(self.data.into_vec(), &state);
+        let processes = Self::process_data(data.clone(), &state);
 
-        let rows: Vec<Row> = processes
-            .into_iter()
-            .map(|data| Self::create_row(data))
-            .collect();
+        let rows: Vec<Row> = processes.into_iter().map(|d| Self::create_row(d)).collect();
 
         Table::new(rows, CONSTRAINTS)
             .header(header)
             .row_highlight_style(Style::new().reversed())
             .render(area, buf, &mut state.ratatui_table_state);
-    }
-}
-
-impl ProcessTableWidget<'_> {
-    pub fn new<'a>(data: &'a Processes) -> ProcessTableWidget<'a> {
-        ProcessTableWidget { data }
     }
 
     fn create_header(&self, state: &ProcessTableState) -> Row<'static> {
@@ -156,8 +153,8 @@ impl ProcessTableWidget<'_> {
         }
     }
 
-    pub fn process_data(processes: Vec<Process>, state: &ProcessTableState) -> Vec<Process> {
-        let mut processes = Self::sort_processes(processes.clone(), &state.sort_by);
+    pub fn process_data(data: ProcessesSnapshot, state: &ProcessTableState) -> Vec<Process> {
+        let mut processes = Self::sort_processes(data.processes.clone(), &state.sort_by);
         processes = Self::filter_threads(processes, state.show_threads);
         processes
     }
@@ -186,11 +183,11 @@ impl ProcessTableWidget<'_> {
     }
 
     pub fn get_nth_pid(
-        processes: Vec<Process>,
+        data: ProcessesSnapshot,
         state: &ProcessTableState,
         n: usize,
     ) -> Option<u32> {
-        Some(Self::process_data(processes, &state).iter().nth(n)?.pid)
+        Some(Self::process_data(data, &state).iter().nth(n)?.pid)
     }
 }
 
