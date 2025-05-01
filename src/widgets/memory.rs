@@ -29,12 +29,12 @@ impl MemoryWidget {
             data.used as f32 / BYTES_PER_GB as f32,
             data.total as f32 / BYTES_PER_GB as f32
         );
-        let mem_bar_width = (area.width / 2) - 14;
+        let mem_bar_width = (area.width / 2) - 12;
         spans.extend(percentage_bar(mem_bar_width, percentage, &text));
 
         // swap
         spans.extend(vec![Span::styled(
-            "      Swap",
+            "    Swap",
             Style::default().fg(Color::Yellow),
         )]);
         let percentage = data.used_swap as f32 / data.total_swap as f32 * 100.0;
@@ -43,7 +43,7 @@ impl MemoryWidget {
             data.used_swap as f32 / BYTES_PER_GB as f32,
             data.total_swap as f32 / BYTES_PER_GB as f32
         );
-        let swap_bar_width = area.width - mem_bar_width - 28;
+        let swap_bar_width = area.width - mem_bar_width - 26;
         spans.extend(percentage_bar(swap_bar_width, percentage, &text));
 
         Paragraph::new(Line::from(spans))

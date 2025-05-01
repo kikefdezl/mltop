@@ -21,10 +21,13 @@ impl CpuWidget {
     // in a pseudo-rectangular way (Rows, Cols)
     pub fn grid_dimensions(&self, cpu_snapshot: &CpuSnapshot) -> (u16, u16) {
         let cores = cpu_snapshot.cores.len();
-        let cpu_cols = fast_int_sqrt(cores) as u16;
-        let mut cpu_rows: u16 = 0;
-        while ((cpu_rows * cpu_cols) as usize) < cores {
-            cpu_rows += 1;
+        if cores <= 3 {
+            return (cores as u16, 1);
+        }
+        let cpu_rows = fast_int_sqrt(cores) as u16;
+        let mut cpu_cols: u16 = 0;
+        while ((cpu_cols * cpu_rows) as usize) < cores {
+            cpu_cols += 1;
         }
         (cpu_rows, cpu_cols)
     }
@@ -43,11 +46,11 @@ impl CpuWidget {
 
         let mut lines = vec![Line::from(spans).left_aligned()];
 
-        let total_width = area.width - 7;
+        let total_width = area.width - 6;
         let core_width: u16 = total_width / cpu_cols;
 
         for r in 0..cpu_rows {
-            let mut spans = vec![Span::raw("     ")];
+            let mut spans = vec![Span::raw("    ")];
 
             // this block makes the core bars wider to ensure that they
             // occupy the full required width to be well aligned
@@ -61,12 +64,12 @@ impl CpuWidget {
                 let i = (c * cpu_rows + r) as usize;
 
                 spans.push(Span::styled(
-                    format!("{:>2}", i),
+                    format!(" {:>2}", i),
                     Style::default().fg(Color::Cyan),
                 )); // cpu number
 
                 let text = format!("{:.1}%", data.cores[i].usage);
-                let bar = percentage_bar(widths[c as usize] - 9, data.cores[i].usage, &text);
+                let bar = percentage_bar(widths[c as usize] - 10, data.cores[i].usage, &text);
                 spans.extend(bar);
 
                 let (temp_str, color) = if data.cores[i].temp == 0.0 {
@@ -130,10 +133,10 @@ mod tests {
         assert_eq!(widget.grid_dimensions(&data), (2, 2));
 
         let data = cpu_snap(5);
-        assert_eq!(widget.grid_dimensions(&data), (3, 2));
+        assert_eq!(widget.grid_dimensions(&data), (2, 3));
 
         let data = cpu_snap(12);
-        assert_eq!(widget.grid_dimensions(&data), (4, 3));
+        assert_eq!(widget.grid_dimensions(&data), (3, 4));
 
         let data = cpu_snap(16);
         assert_eq!(widget.grid_dimensions(&data), (4, 4));
