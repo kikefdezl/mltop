@@ -41,7 +41,7 @@ impl ActionBarWidget {
             .collect();
 
         if let Some(s) = filter_by {
-            spans.push(Span::raw(format!(" Filter: {}", s)));
+            spans.push(Span::raw(format!(" Filter: {} ", s)));
         };
 
         let used_width: usize = spans.iter().map(|s| s.content.len()).sum();

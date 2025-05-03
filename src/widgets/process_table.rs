@@ -42,7 +42,10 @@ impl ProcessTableWidget {
 
         let processes = Self::process_data(data.clone(), &state, filter_by);
 
-        let rows: Vec<Row> = processes.into_iter().map(|d| Self::create_row(d)).collect();
+        let rows: Vec<Row> = processes
+            .into_iter()
+            .map(|d| Self::create_row(d, filter_by))
+            .collect();
 
         Table::new(rows, CONSTRAINTS)
             .header(header)
@@ -65,7 +68,7 @@ impl ProcessTableWidget {
             .height(1)
     }
 
-    fn create_row<'a>(data: Process) -> Row<'a> {
+    fn create_row<'a>(data: Process, filter_by: Option<&'a str>) -> Row<'a> {
         let color = match data.type_ {
             ProcessType::GpuGraphic => GPU_GRAPHIC_COLOR,
             ProcessType::GpuCompute => GPU_COMPUTE_COLOR,
@@ -76,7 +79,6 @@ impl ProcessTableWidget {
 
         let cpu_text_color = Self::value_color(data.cpu_usage);
         let mem_text_color = Self::value_color(data.memory_usage);
-        let (cmd_path, cmd_bin, cmd_args) = Self::split_command(&data.command);
 
         Row::new(vec![
             Cell::from(Text::from(data.pid.to_string()).alignment(Alignment::Right)),
@@ -111,39 +113,53 @@ impl ProcessTableWidget {
                 ])
                 .alignment(Alignment::Right),
             ),
-            Cell::from(Line::from(vec![
-                Span::from(cmd_path),
-                Span::styled(
-                    cmd_bin,
-                    Style::default()
-                        .fg(Color::Magenta)
-                        .add_modifier(Modifier::BOLD),
-                ),
-                Span::from(" "),
-                Span::from(cmd_args),
-            ])),
+            Self::create_cmd_cell(data.command, color, filter_by),
         ])
         .style(Style::default().fg(color))
     }
 
-    /// splits a command into three parts
-    /// - prefix: the path to the binary
-    /// - bin: the binary name
-    /// - suffix: command arguments
-    ///
-    /// Example:
-    ///     `/usr/bin/mltop --help`
-    /// would return:
-    ///     (/usr/bin, mltop, --help)
-    fn split_command(cmd: &str) -> (String, String, String) {
-        let split_idx0 = cmd.rfind('/').map_or(0, |i| i + 1);
-        let path: String = cmd.chars().take(split_idx0).collect();
+    // creates a Cell with the process command:
+    // - highlights the `bin` part of the command with Magenta text
+    // - highlights the `filter_by` matching string with a green background
+    fn create_cmd_cell(cmd: String, color: Color, filter_by: Option<&str>) -> Cell {
+        let bin_start = cmd.rfind('/').map(|i| i + 1).unwrap_or(0);
+        let bin_end = cmd.find(' ').unwrap_or(cmd.len());
 
-        let split_idx1 = cmd.find(' ').unwrap_or(cmd.len());
-        let bin: String = cmd[..split_idx1].chars().skip(split_idx0).collect();
+        let (match_start, match_end) = match filter_by {
+            Some(s) => match cmd.find(s) {
+                Some(m) => (m, m + s.len()),
+                None => (0, 0),
+            },
+            None => (0, 0),
+        };
 
-        let args: String = cmd.chars().skip(split_idx1 + 1).collect();
-        (path, bin, args)
+        let mut cuts = vec![0, bin_start, bin_end, match_start, match_end, cmd.len()];
+        cuts.sort_unstable();
+        cuts.dedup();
+
+        let spans: Vec<Span> = cuts
+            .windows(2)
+            .filter(|w| w[0] != w[1])
+            .map(|w| {
+                let (s, e) = (w[0], w[1]);
+                let text = cmd[s..e].to_string();
+                let mut style = Style::default().fg(color);
+
+                // Apply magenta/bold for bin section
+                if s < bin_end && e > bin_start {
+                    style = style.fg(Color::Magenta).add_modifier(Modifier::BOLD);
+                }
+
+                // Apply green background for filter match
+                if s < match_end && e > match_start {
+                    style = style.fg(Color::Black).bg(Color::Green);
+                }
+
+                Span::styled(text, style)
+            })
+            .collect();
+
+        Cell::from(Line::from(spans))
     }
 
     fn value_color(value: f32) -> Color {
@@ -204,34 +220,11 @@ impl ProcessTableWidget {
         filter_by: Option<&str>,
         n: usize,
     ) -> Option<u32> {
-        Some(Self::process_data(data, &state, filter_by).iter().nth(n)?.pid)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::ProcessTableWidget;
-
-    #[test]
-    fn test_split_command() {
-        let (path, bin, args) = ProcessTableWidget::split_command("/usr/bin/mltop --help");
-        assert_eq!(path, "/usr/bin/");
-        assert_eq!(bin, "mltop");
-        assert_eq!(args, "--help");
-
-        let (path, bin, args) = ProcessTableWidget::split_command("mltop");
-        assert_eq!(path, "");
-        assert_eq!(bin, "mltop");
-        assert_eq!(args, "");
-
-        let (path, bin, args) = ProcessTableWidget::split_command("/bin/bash -c 'echo hello'");
-        assert_eq!(path, "/bin/");
-        assert_eq!(bin, "bash");
-        assert_eq!(args, "-c 'echo hello'");
-
-        let (path, bin, args) = ProcessTableWidget::split_command("/usr/local/bin/python3");
-        assert_eq!(path, "/usr/local/bin/");
-        assert_eq!(bin, "python3");
-        assert_eq!(args, "");
+        Some(
+            Self::process_data(data, &state, filter_by)
+                .iter()
+                .nth(n)?
+                .pid,
+        )
     }
 }
