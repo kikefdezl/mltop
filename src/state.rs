@@ -1,12 +1,27 @@
 use crate::widgets::state::process_table::ProcessTableState;
 
+pub enum Mode {
+    Normal,
+    Filter,
+}
+
+impl Mode {
+    fn default() -> Mode {
+        Mode::Normal
+    }
+}
+
 pub struct State {
+    pub mode: Mode,
+    pub filter_by: String,
     pub process_table: ProcessTableState,
 }
 
 impl State {
     pub fn new() -> State {
         State {
+            mode: Mode::default(),
+            filter_by: String::new(),
             process_table: ProcessTableState::default(),
         }
     }
