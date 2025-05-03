@@ -9,7 +9,7 @@ use crate::data::update_kind::DataUpdateKind;
 use crate::data::Data;
 use crate::event::Event;
 use crate::message_bus::MessageBus;
-use crate::state::State;
+use crate::state::{Mode, State};
 use crate::widgets::gpu::GPU_WIDGET_HEIGHT;
 use crate::widgets::memory::MEMORY_WIDGET_HEIGHT;
 use crate::widgets::process_table::ProcessTableWidget;
@@ -102,24 +102,28 @@ impl Tui {
     fn handle_crossterm_event(&mut self, cross_evt: CrosstermEvent) -> io::Result<()> {
         match cross_evt {
             CrosstermEvent::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_event(key_event)
+                match self.state.mode {
+                    Mode::Normal => self.handle_key_event_normal_mode(key_event),
+                    Mode::Filter => self.handle_key_event_filter_mode(key_event),
+                }
             }
             _ => {}
         };
         Ok(())
     }
 
-    fn handle_key_event(&mut self, key_event: KeyEvent) {
+    fn handle_key_event_normal_mode(&mut self, key_event: KeyEvent) {
         match key_event.modifiers {
             KeyModifiers::NONE => match key_event.code {
                 KeyCode::Char('q') => self.exit(),
+                KeyCode::Char('t') => self.toggle_threads(),
                 KeyCode::Down | KeyCode::Char('j') => self.move_down(),
                 KeyCode::Up | KeyCode::Char('k') => self.move_up(),
+                KeyCode::F(4) | KeyCode::Char('/') => self.enter_filter_mode(),
                 KeyCode::Esc => self.deactivate(),
                 KeyCode::F(5) => self.toggle_threads(),
                 KeyCode::F(6) => self.toggle_sort_by(),
                 KeyCode::F(9) => self.kill_process(),
-                KeyCode::Char('t') => self.toggle_threads(),
                 _ => {}
             },
             KeyModifiers::CONTROL => match key_event.code {
@@ -132,6 +136,25 @@ impl Tui {
             },
             _ => {}
         }
+    }
+
+    fn handle_key_event_filter_mode(&mut self, key_event: KeyEvent) {
+        match key_event.modifiers {
+            KeyModifiers::NONE => match key_event.code {
+                KeyCode::Esc => self.exit_filter_mode(),
+                KeyCode::Char(c) => self.state.filter_by.push(c),
+                KeyCode::Backspace => {
+                    self.state.filter_by.pop();
+                }
+                _ => {}
+            },
+            KeyModifiers::SHIFT => match key_event.code {
+                KeyCode::Char(c) => self.state.filter_by.push(c),
+                _ => {}
+            },
+            _ => {}
+        }
+        self.render()
     }
 
     fn handle_render_event(&mut self) -> io::Result<()> {
@@ -183,22 +206,39 @@ impl Tui {
                 .constraints([Constraint::Min(0), Constraint::Length(1)])
                 .split(*areas.last().unwrap());
 
+            let filter_by = match self.state.mode {
+                Mode::Filter => Some(self.state.filter_by.as_str()),
+                _ => None,
+            };
+
             self.widgets.process_table().render(
                 remaining_areas[0],
                 frame.buffer_mut(),
                 &mut self.state.process_table,
                 &self.data.processes,
+                filter_by,
             );
             self.widgets.action_bar.render(
                 remaining_areas[1],
                 frame.buffer_mut(),
                 self.message_bus.read(),
+                filter_by,
             );
         });
     }
 
     fn deactivate(&mut self) {
         self.state.deactivate_table();
+        self.render();
+    }
+
+    fn enter_filter_mode(&mut self) {
+        self.state.mode = Mode::Filter;
+        self.render();
+    }
+
+    fn exit_filter_mode(&mut self) {
+        self.state.mode = Mode::Normal;
         self.render();
     }
 
@@ -236,10 +276,15 @@ impl Tui {
         // TODO: Potentially the State could get out of sync with what is
         // reflected in the table, so this could kill the wrong PID.
         // A more robust solution is needed
+        let filter_by = match self.state.mode {
+            Mode::Filter => Some(self.state.filter_by.as_str()),
+            _ => None,
+        };
         if let Some(selected_row) = self.state.selected_row() {
             if let Some(pid) = ProcessTableWidget::get_nth_pid(
                 self.data.processes.clone(),
                 &self.state.process_table,
+                filter_by,
                 selected_row,
             ) {
                 self.collector.system.kill_process(pid as usize);

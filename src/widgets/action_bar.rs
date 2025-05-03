@@ -7,7 +7,12 @@ use ratatui::{
     widgets::{Block, Paragraph},
 };
 
-const FOOTER: [(&str, &str); 3] = [("F5", "Threads"), ("F6", "SortBy"), ("F9", "Kill")];
+const FOOTER: [(&str, &str); 4] = [
+    ("F4", "Filter"),
+    ("F5", "Threads"),
+    ("F6", "SortBy"),
+    ("F9", "Kill"),
+];
 const HIGHLIGHT_STYLE: Style = Style::new().bg(Color::White).fg(Color::Black);
 const MESSAGE_STYLE: Style = Style::new().bg(Color::Red).fg(Color::Black);
 
@@ -18,7 +23,13 @@ impl ActionBarWidget {
         ActionBarWidget {}
     }
 
-    pub fn render(&self, area: Rect, buf: &mut Buffer, message: Option<&str>) {
+    pub fn render(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        message: Option<&str>,
+        filter_by: Option<&str>,
+    ) {
         let mut spans: Vec<Span> = FOOTER
             .iter()
             .flat_map(|f| {
@@ -28,6 +39,10 @@ impl ActionBarWidget {
                 ]
             })
             .collect();
+
+        if let Some(s) = filter_by {
+            spans.push(Span::raw(format!(" Filter: {}", s)));
+        };
 
         let used_width: usize = spans.iter().map(|s| s.content.len()).sum();
         let message_width: usize = match message {

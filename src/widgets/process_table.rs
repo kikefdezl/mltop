@@ -36,10 +36,11 @@ impl ProcessTableWidget {
         buf: &mut Buffer,
         state: &mut ProcessTableState,
         data: &ProcessesSnapshot,
+        filter_by: Option<&str>,
     ) {
         let header = self.create_header(&state);
 
-        let processes = Self::process_data(data.clone(), &state);
+        let processes = Self::process_data(data.clone(), &state, filter_by);
 
         let rows: Vec<Row> = processes.into_iter().map(|d| Self::create_row(d)).collect();
 
@@ -153,10 +154,25 @@ impl ProcessTableWidget {
         }
     }
 
-    pub fn process_data(data: ProcessesSnapshot, state: &ProcessTableState) -> Vec<Process> {
-        let mut processes = Self::sort_processes(data.processes.clone(), &state.sort_by);
+    pub fn process_data(
+        data: ProcessesSnapshot,
+        state: &ProcessTableState,
+        filter_by: Option<&str>,
+    ) -> Vec<Process> {
+        let mut processes = Self::filter_processes(data.processes, filter_by);
+        processes = Self::sort_processes(processes, &state.sort_by);
         processes = Self::filter_threads(processes, state.show_threads);
         processes
+    }
+
+    pub fn filter_processes(processes: Vec<Process>, filter_by: Option<&str>) -> Vec<Process> {
+        match filter_by {
+            Some(s) => processes
+                .into_iter()
+                .filter(|p| p.command.contains(s))
+                .collect(),
+            None => processes,
+        }
     }
 
     pub fn sort_processes(mut processes: Vec<Process>, sort_by: &ProcessesSortBy) -> Vec<Process> {
@@ -185,9 +201,10 @@ impl ProcessTableWidget {
     pub fn get_nth_pid(
         data: ProcessesSnapshot,
         state: &ProcessTableState,
+        filter_by: Option<&str>,
         n: usize,
     ) -> Option<u32> {
-        Some(Self::process_data(data, &state).iter().nth(n)?.pid)
+        Some(Self::process_data(data, &state, filter_by).iter().nth(n)?.pid)
     }
 }
 
