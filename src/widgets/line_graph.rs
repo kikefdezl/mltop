@@ -19,11 +19,19 @@ impl LineGraphWidget {
     }
 }
 
+pub struct LineGraphRenderContext<'a> {
+    pub area: Rect,
+    pub buf: &'a mut Buffer,
+    pub data: &'a DataStore,
+    pub max_gpu_mem: Option<u64>,
+}
+
 impl LineGraphWidget {
-    pub fn render(&self, area: Rect, buf: &mut Buffer, data: &DataStore) {
+    pub fn render(&self, ctx: LineGraphRenderContext) {
         let mut datasets = vec![];
 
-        let data: Vec<&StoredSnapshot> = data
+        let data: Vec<&StoredSnapshot> = ctx
+            .data
             .snapshots
             .iter()
             .rev()
@@ -31,12 +39,16 @@ impl LineGraphWidget {
             .rev()
             .collect();
 
-        // TODO: See if we can avoid cloning here
         let gpu_mem_data: Vec<(f64, f64)> = data
             .iter()
             .filter_map(|s| s.gpu_mem_use)
             .enumerate()
-            .map(|(t, g)| (t as f64, g as f64))
+            .map(|(t, g)| {
+                (
+                    t as f64,
+                    (g as f64 / ctx.max_gpu_mem.unwrap() as f64 * 100.0),
+                )
+            })
             .collect();
 
         let gpu_use_data: Vec<(f64, f64)> = data
@@ -98,6 +110,6 @@ impl LineGraphWidget {
                     .labels(["0", "100"]),
             )
             .hidden_legend_constraints((Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)))
-            .render(area, buf);
+            .render(ctx.area, ctx.buf);
     }
 }

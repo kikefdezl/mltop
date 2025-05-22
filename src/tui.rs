@@ -11,6 +11,7 @@ use crate::event::Event;
 use crate::message_bus::MessageBus;
 use crate::state::{Mode, State};
 use crate::widgets::gpu::GPU_WIDGET_HEIGHT;
+use crate::widgets::line_graph::LineGraphRenderContext;
 use crate::widgets::memory::MEMORY_WIDGET_HEIGHT;
 use crate::widgets::process_table::ProcessTableWidget;
 use crate::widgets::Widgets;
@@ -187,9 +188,13 @@ impl Tui {
             self.widgets
                 .memory()
                 .render(areas[1], frame.buffer_mut(), &self.data.memory);
-            self.widgets
-                .line_graph()
-                .render(areas[2], frame.buffer_mut(), &self.data_store);
+            let ctx = LineGraphRenderContext {
+                area: areas[2],
+                buf: frame.buffer_mut(),
+                data: &self.data_store,
+                max_gpu_mem: self.data.gpu.as_ref().map(|g| g.max_memory),
+            };
+            self.widgets.line_graph().render(ctx);
             if self.data.has_gpu() {
                 self.widgets.gpu().render(
                     areas[3],
