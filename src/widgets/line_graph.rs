@@ -95,6 +95,23 @@ impl LineGraphWidget {
                 .data(&cpu_data),
         );
 
+        let mem_data: Vec<(f64, f64)> = data
+            .iter()
+            .enumerate()
+            .map(|(t, s)| (t as f64, s.mem_use * 100.0))
+            .collect();
+
+        if gpu_use_data.is_empty() && gpu_mem_data.is_empty() {
+            datasets.push(
+                Dataset::default()
+                    .name("MEM %")
+                    .marker(symbols::Marker::Braille)
+                    .style(Style::default().fg(Color::Green))
+                    .graph_type(GraphType::Line)
+                    .data(&mem_data),
+            );
+        }
+
         Chart::new(datasets)
             .block(Block::bordered().border_type(BorderType::Rounded))
             .x_axis(
