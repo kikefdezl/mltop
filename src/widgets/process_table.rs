@@ -77,8 +77,16 @@ impl ProcessTableWidget {
             _ => Color::White,
         };
 
-        let cpu_text_color = Self::value_color(data.cpu_usage);
-        let mem_text_color = Self::value_color(data.memory_usage);
+        let cpu_text_color = if data.cpu_usage < 0.05 {
+            Color::White
+        } else {
+            color
+        };
+        let mem_text_color = if data.memory_usage < 0.05 {
+            Color::White
+        } else {
+            color
+        };
 
         Row::new(vec![
             Cell::from(Text::from(data.pid.to_string()).alignment(Alignment::Right)),
@@ -160,14 +168,6 @@ impl ProcessTableWidget {
             .collect();
 
         Cell::from(Line::from(spans))
-    }
-
-    fn value_color(value: f32) -> Color {
-        if value > 0.05 {
-            Color::default()
-        } else {
-            Color::DarkGray
-        }
     }
 
     pub fn process_data(
