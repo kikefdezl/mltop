@@ -18,4 +18,8 @@ impl MemorySnapshot {
         };
         memory
     }
+
+    pub fn total_percent(&self) -> f64 {
+        ((self.used + self.used_swap) as f64) / ((self.total + self.total_swap) as f64)
+    }
 }

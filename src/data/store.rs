@@ -1,7 +1,10 @@
 use super::snapshot::DataSnapshot;
 
+// Structure for storing only what we need to track
 pub struct StoredSnapshot {
     pub cpu_use: f32,
+    // memory use in percentage 0 - 1 (includes swap)
+    pub mem_use: f64,
     pub gpu_use: Option<u32>,
     pub gpu_mem_use: Option<u64>,
 }
@@ -16,6 +19,7 @@ impl StoredSnapshot {
 
         StoredSnapshot {
             cpu_use: snapshot.cpu.unwrap().usage,
+            mem_use: snapshot.memory.unwrap().total_percent(),
             gpu_use,
             gpu_mem_use,
         }
