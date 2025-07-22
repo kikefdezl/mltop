@@ -39,36 +39,13 @@ impl LineGraphWidget {
             .rev()
             .collect();
 
-        let gpu_mem_data: Vec<(f64, f64)> = data
-            .iter()
-            .filter_map(|s| s.gpu_mem_use)
-            .enumerate()
-            .map(|(t, g)| {
-                (
-                    t as f64,
-                    (g as f64 / ctx.max_gpu_mem.unwrap() as f64 * 100.0),
-                )
-            })
-            .collect();
-
+        // GPU USE %
         let gpu_use_data: Vec<(f64, f64)> = data
             .iter()
             .filter_map(|s| s.gpu_use)
             .enumerate()
             .map(|(t, g)| (t as f64, g as f64))
             .collect();
-
-        if !gpu_mem_data.is_empty() {
-            datasets.push(
-                Dataset::default()
-                    .name("GPU MEM%")
-                    .marker(symbols::Marker::Braille)
-                    .style(Style::default().fg(Color::Yellow))
-                    .graph_type(GraphType::Line)
-                    .data(&gpu_mem_data),
-            );
-        }
-
         if !gpu_use_data.is_empty() {
             datasets.push(
                 Dataset::default()
@@ -80,12 +57,35 @@ impl LineGraphWidget {
             );
         }
 
+        // GPU MEM %
+        let gpu_mem_data: Vec<(f64, f64)> = data
+            .iter()
+            .filter_map(|s| s.gpu_mem_use)
+            .enumerate()
+            .map(|(t, g)| {
+                (
+                    t as f64,
+                    (g as f64 / ctx.max_gpu_mem.unwrap() as f64 * 100.0),
+                )
+            })
+            .collect();
+        if !gpu_mem_data.is_empty() {
+            datasets.push(
+                Dataset::default()
+                    .name("GPU MEM%")
+                    .marker(symbols::Marker::Braille)
+                    .style(Style::default().fg(Color::Yellow))
+                    .graph_type(GraphType::Line)
+                    .data(&gpu_mem_data),
+            );
+        }
+
+        // CPU %
         let cpu_data: Vec<(f64, f64)> = data
             .iter()
             .enumerate()
             .map(|(t, s)| (t as f64, s.cpu_use as f64))
             .collect();
-
         datasets.push(
             Dataset::default()
                 .name("CPU %")
@@ -95,22 +95,20 @@ impl LineGraphWidget {
                 .data(&cpu_data),
         );
 
+        // MEM %
         let mem_data: Vec<(f64, f64)> = data
             .iter()
             .enumerate()
             .map(|(t, s)| (t as f64, s.mem_use * 100.0))
             .collect();
-
-        if gpu_use_data.is_empty() && gpu_mem_data.is_empty() {
-            datasets.push(
-                Dataset::default()
-                    .name("MEM %")
-                    .marker(symbols::Marker::Braille)
-                    .style(Style::default().fg(Color::Green))
-                    .graph_type(GraphType::Line)
-                    .data(&mem_data),
-            );
-        }
+        datasets.push(
+            Dataset::default()
+                .name("MEM %")
+                .marker(symbols::Marker::Braille)
+                .style(Style::default().fg(Color::Green))
+                .graph_type(GraphType::Line)
+                .data(&mem_data),
+        );
 
         Chart::new(datasets)
             .block(Block::bordered().border_type(BorderType::Rounded))
