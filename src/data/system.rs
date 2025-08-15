@@ -10,13 +10,9 @@ pub struct System {
 
 impl System {
     pub fn new() -> System {
-        let nvml = match Nvml::init() {
-            Ok(n) => Some(n),
-            Err(_) => None,
-        };
         System {
             sys: SysinfoSystem::new(),
-            nvml,
+            nvml: Nvml::init().ok(),
         }
     }
 

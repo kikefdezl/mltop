@@ -64,7 +64,7 @@ impl Tui {
         self.render();
         let (tx, rx) = mpsc::channel();
 
-        Tui::spawn_crossterm_event_thread(tx.clone(), 200)?;
+        Tui::spawn_crossterm_event_thread(tx.clone(), 300)?;
         Tui::spawn_render_event_thread(tx.clone(), self.refresh_rate_ms)?;
 
         while !self.exit {

@@ -38,9 +38,9 @@ impl ProcessTableWidget {
         data: &ProcessesSnapshot,
         filter_by: Option<&str>,
     ) {
-        let header = self.create_header(&state);
+        let header = self.create_header(state);
 
-        let processes = Self::process_data(data.clone(), &state, filter_by);
+        let processes = Self::process_data(data.clone(), state, filter_by);
 
         let rows: Vec<Row> = processes
             .into_iter()
@@ -129,7 +129,7 @@ impl ProcessTableWidget {
     // creates a Cell with the process command:
     // - highlights the `bin` part of the command with Magenta text
     // - highlights the `filter_by` matching string with a green background
-    fn create_cmd_cell(cmd: String, color: Color, filter_by: Option<&str>) -> Cell {
+    fn create_cmd_cell(cmd: String, color: Color, filter_by: Option<&str>) -> Cell<'_> {
         let bin_start = cmd.rfind('/').map(|i| i + 1).unwrap_or(0);
         let bin_end = cmd.find(' ').unwrap_or(cmd.len());
 
@@ -220,11 +220,6 @@ impl ProcessTableWidget {
         filter_by: Option<&str>,
         n: usize,
     ) -> Option<u32> {
-        Some(
-            Self::process_data(data, &state, filter_by)
-                .iter()
-                .nth(n)?
-                .pid,
-        )
+        Some(Self::process_data(data, state, filter_by).get(n)?.pid)
     }
 }

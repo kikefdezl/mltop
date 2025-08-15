@@ -12,10 +12,9 @@ pub struct Collector {
 
 impl Collector {
     pub fn new() -> Collector {
-        let mut system = System::new();
-        system.refresh(&DataUpdateKind::all());
-
-        Collector { system }
+        Collector {
+            system: System::new(),
+        }
     }
 
     pub fn collect(&mut self, kind: &DataUpdateKind) -> DataSnapshot {
@@ -36,11 +35,8 @@ impl Collector {
         let gpu = if kind.gpu() {
             match &self.system.nvml {
                 Some(n) => {
-                    let result = GpuSnapshot::from_nvml(&n);
-                    match result {
-                        Ok(g) => Some(g),
-                        Err(_) => None,
-                    }
+                    let result = GpuSnapshot::from_nvml(n);
+                    result.ok()
                 }
                 None => None,
             }
