@@ -3,8 +3,8 @@ use std::time::Duration;
 use std::{io, thread};
 
 use crate::config::REFRESH_RATE_MILLIS;
-use crate::data::collector::Collector;
 use crate::data::store::{DataStore, StoredSnapshot};
+use crate::data::system::{System, SystemProvider};
 use crate::data::update_kind::DataUpdateKind;
 use crate::data::Data;
 use crate::event::Event;
@@ -25,7 +25,7 @@ use ratatui::{
 };
 
 pub struct Tui {
-    collector: Collector,
+    system: System,
     data: Data,
     data_store: DataStore,
     exit: bool,
@@ -40,15 +40,15 @@ impl Tui {
     pub fn new() -> Tui {
         let mut message_bus = MessageBus::new();
 
-        let mut collector = Collector::new();
-        let data = Data::new_from_snapshot(collector.collect(&DataUpdateKind::all()));
+        let mut system = System::new();
+        let data = Data::new_from_snapshot(system.collect_snapshot(&DataUpdateKind::all()));
 
-        if !collector.can_read_gpu() {
+        if !system.can_read_gpu() {
             message_bus.send("No GPU found.".to_string())
         }
 
         Tui {
-            collector,
+            system,
             data,
             data_store: DataStore::new(),
             exit: false,
@@ -126,14 +126,16 @@ impl Tui {
                 KeyCode::F(9) => self.kill_process(),
                 _ => {}
             },
-            KeyModifiers::CONTROL => match key_event.code {
-                KeyCode::Char('c') => self.exit(),
-                _ => {}
-            },
-            KeyModifiers::SHIFT => match key_event.code {
-                KeyCode::Char('G') => self.go_to_last(),
-                _ => {}
-            },
+            KeyModifiers::CONTROL => {
+                if let KeyCode::Char('c') = key_event.code {
+                    self.exit()
+                }
+            }
+            KeyModifiers::SHIFT => {
+                if let KeyCode::Char('G') = key_event.code {
+                    self.go_to_last()
+                }
+            }
             _ => {}
         }
     }
@@ -148,10 +150,11 @@ impl Tui {
                 }
                 _ => {}
             },
-            KeyModifiers::SHIFT => match key_event.code {
-                KeyCode::Char(c) => self.state.filter_by.push(c),
-                _ => {}
-            },
+            KeyModifiers::SHIFT => {
+                if let KeyCode::Char(c) = key_event.code {
+                    self.state.filter_by.push(c)
+                }
+            }
             _ => {}
         }
         self.render()
@@ -171,7 +174,7 @@ impl Tui {
                 Constraint::Length(MEMORY_WIDGET_HEIGHT),
                 Constraint::Max(20),
             ];
-            if self.collector.can_read_gpu() {
+            if self.system.can_read_gpu() {
                 constraints.push(Constraint::Length(GPU_WIDGET_HEIGHT));
             }
             constraints.push(Constraint::Min(0));
@@ -291,7 +294,7 @@ impl Tui {
                 filter_by,
                 selected_row,
             ) {
-                self.collector.system.kill_process(pid as usize);
+                self.system.kill_process(pid as usize);
                 self.message_bus.send(format!("Killed pid {}", pid));
             }
         }
@@ -307,7 +310,7 @@ impl Tui {
             false => DataUpdateKind::all(),
         };
 
-        let data_snapshot = self.collector.collect(&update_kind);
+        let data_snapshot = self.system.collect_snapshot(&update_kind);
         let stored = StoredSnapshot::from_data_snapshot(data_snapshot.clone());
         self.data_store.save(stored);
         self.data.update_from_snapshot(data_snapshot);

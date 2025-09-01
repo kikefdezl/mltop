@@ -4,7 +4,6 @@ use self::memory::MemorySnapshot;
 use self::processes::ProcessesSnapshot;
 use self::snapshot::DataSnapshot;
 
-pub mod collector;
 pub mod cpu;
 pub mod gpu;
 pub mod memory;

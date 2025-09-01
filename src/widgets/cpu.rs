@@ -56,8 +56,8 @@ impl CpuWidget {
             // occupy the full required width to be well aligned
             let mut widths = vec![core_width; cpu_cols as usize];
             let remain: u16 = total_width - widths.iter().sum::<u16>();
-            for i in 0..remain as usize {
-                widths[i] += 1;
+            for width in widths.iter_mut().take(remain as usize) {
+                *width += 1;
             }
 
             for c in 0..cpu_cols {
