@@ -3,11 +3,11 @@ use nvml_wrapper::Nvml;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, Pid, ProcessRefreshKind, RefreshKind};
 use sysinfo::{System as SysinfoSystem, UpdateKind};
 
-use super::cpu::CpuSnapshot;
-use super::gpu::GpuSnapshot;
-use super::memory::MemorySnapshot;
-use super::processes::ProcessesSnapshot;
-use super::DataSnapshot;
+use crate::data::cpu::CpuSnapshot;
+use crate::data::gpu::GpuSnapshot;
+use crate::data::memory::MemorySnapshot;
+use crate::data::processes::ProcessesSnapshot;
+use crate::data::snapshot::DataSnapshot;
 
 pub trait SystemProvider {
     fn collect_snapshot(&mut self, kind: &DataUpdateKind) -> DataSnapshot;

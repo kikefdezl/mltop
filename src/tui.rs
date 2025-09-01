@@ -4,7 +4,7 @@ use std::{io, thread};
 
 use crate::config::REFRESH_RATE_MILLIS;
 use crate::data::store::{DataStore, StoredSnapshot};
-use crate::data::system::{System, SystemProvider};
+use crate::system::{System, SystemProvider};
 use crate::data::update_kind::DataUpdateKind;
 use crate::data::Data;
 use crate::event::Event;
@@ -24,8 +24,8 @@ use ratatui::{
     DefaultTerminal,
 };
 
-pub struct Tui {
-    system: System,
+pub struct Tui<S: SystemProvider> {
+    system: S,
     data: Data,
     data_store: DataStore,
     exit: bool,
@@ -36,8 +36,8 @@ pub struct Tui {
     widgets: Widgets,
 }
 
-impl Tui {
-    pub fn new() -> Tui {
+impl<S: SystemProvider> Tui<S> {
+    pub fn new() -> Tui<System> {
         let mut message_bus = MessageBus::new();
 
         let mut system = System::new();
@@ -64,8 +64,8 @@ impl Tui {
         self.render();
         let (tx, rx) = mpsc::channel();
 
-        Tui::spawn_crossterm_event_thread(tx.clone(), 300)?;
-        Tui::spawn_render_event_thread(tx.clone(), self.refresh_rate_ms)?;
+        Tui::<System>::spawn_crossterm_event_thread(tx.clone(), 300)?;
+        Tui::<System>::spawn_render_event_thread(tx.clone(), self.refresh_rate_ms)?;
 
         while !self.exit {
             match rx.recv().unwrap() {
