@@ -1,30 +1,33 @@
+use std::io::Stdout;
 use std::sync::mpsc::{self, Sender};
 use std::time::Duration;
 use std::{io, thread};
 
+use crossterm::event::{
+    self, Event as CrosstermEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
+};
+use ratatui::prelude::{Backend, CrosstermBackend};
+use ratatui::{
+    backend::TestBackend,
+    layout::{Constraint, Direction, Layout},
+    Terminal,
+};
+
 use crate::config::REFRESH_RATE_MILLIS;
 use crate::data::store::{DataStore, StoredSnapshot};
-use crate::system::{System, SystemProvider};
 use crate::data::update_kind::DataUpdateKind;
 use crate::data::Data;
 use crate::event::Event;
 use crate::message_bus::MessageBus;
 use crate::state::{Mode, State};
+use crate::system::{FakeSystem, RealSystem, SystemMonitor};
 use crate::widgets::gpu::GPU_WIDGET_HEIGHT;
 use crate::widgets::line_graph::LineGraphRenderContext;
 use crate::widgets::memory::MEMORY_WIDGET_HEIGHT;
 use crate::widgets::process_table::ProcessTableWidget;
 use crate::widgets::Widgets;
 
-use crossterm::event::{
-    self, Event as CrosstermEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
-};
-use ratatui::{
-    layout::{Constraint, Direction, Layout},
-    DefaultTerminal,
-};
-
-pub struct Tui<S: SystemProvider> {
+pub struct Tui<S: SystemMonitor, B: Backend> {
     system: S,
     data: Data,
     data_store: DataStore,
@@ -32,18 +35,24 @@ pub struct Tui<S: SystemProvider> {
     message_bus: MessageBus,
     refresh_rate_ms: u64,
     state: State,
-    terminal: DefaultTerminal,
+    terminal: Terminal<B>,
     widgets: Widgets,
 }
 
-impl<S: SystemProvider> Tui<S> {
-    pub fn new() -> Tui<System> {
+impl Tui<RealSystem, CrosstermBackend<Stdout>> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Default for Tui<RealSystem, CrosstermBackend<Stdout>> {
+    fn default() -> Self {
         let mut message_bus = MessageBus::new();
 
-        let mut system = System::new();
+        let mut system = RealSystem::default();
         let data = Data::new_from_snapshot(system.collect_snapshot(&DataUpdateKind::all()));
 
-        if !system.can_read_gpu() {
+        if !system.gpu_available() {
             message_bus.send("No GPU found.".to_string())
         }
 
@@ -59,13 +68,15 @@ impl<S: SystemProvider> Tui<S> {
             widgets: Widgets::new(),
         }
     }
+}
 
+impl<S: SystemMonitor, B: Backend> Tui<S, B> {
     pub fn run(&mut self) -> io::Result<()> {
         self.render();
         let (tx, rx) = mpsc::channel();
 
-        Tui::<System>::spawn_crossterm_event_thread(tx.clone(), 300)?;
-        Tui::<System>::spawn_render_event_thread(tx.clone(), self.refresh_rate_ms)?;
+        Self::spawn_crossterm_event_thread(tx.clone(), 300)?;
+        Self::spawn_render_event_thread(tx.clone(), self.refresh_rate_ms)?;
 
         while !self.exit {
             match rx.recv().unwrap() {
@@ -167,14 +178,14 @@ impl<S: SystemProvider> Tui<S> {
         Ok(())
     }
 
-    fn render(&mut self) {
+    pub fn render(&mut self) {
         let _ = self.terminal.draw(|frame| {
             let mut constraints = vec![
                 Constraint::Length(self.widgets.cpu().grid_dimensions(&self.data.cpu).0 + 1),
                 Constraint::Length(MEMORY_WIDGET_HEIGHT),
                 Constraint::Max(20),
             ];
-            if self.system.can_read_gpu() {
+            if self.system.gpu_available() {
                 constraints.push(Constraint::Length(GPU_WIDGET_HEIGHT));
             }
             constraints.push(Constraint::Min(0));
@@ -314,5 +325,30 @@ impl<S: SystemProvider> Tui<S> {
         let stored = StoredSnapshot::from_data_snapshot(data_snapshot.clone());
         self.data_store.save(stored);
         self.data.update_from_snapshot(data_snapshot);
+    }
+}
+
+// used for testing different hardware setups
+impl Tui<FakeSystem, TestBackend> {
+    pub fn fake(mut system: FakeSystem, backend: TestBackend) -> Self {
+        let mut message_bus = MessageBus::new();
+
+        let data = Data::new_from_snapshot(system.collect_snapshot(&DataUpdateKind::all()));
+
+        if !system.gpu_available() {
+            message_bus.send("No GPU found.".to_string())
+        }
+
+        Tui {
+            system,
+            data,
+            data_store: DataStore::new(),
+            exit: false,
+            message_bus,
+            refresh_rate_ms: REFRESH_RATE_MILLIS,
+            state: State::new(),
+            terminal: Terminal::new(backend).unwrap(),
+            widgets: Widgets::new(),
+        }
     }
 }

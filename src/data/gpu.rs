@@ -6,8 +6,8 @@ use nvml_wrapper::enum_wrappers::device::TemperatureSensor;
 pub struct GpuSnapshot {
     pub name: String,
     pub temperature: u32,
-    pub max_memory: u64,
-    pub used_memory: u64,
+    pub max_memory: u64,  // bytes
+    pub used_memory: u64, //bytes
     pub utilization: u32,
     pub max_power: u32,
     pub power_usage: u32,
