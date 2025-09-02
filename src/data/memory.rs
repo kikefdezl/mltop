@@ -1,5 +1,8 @@
 use sysinfo::System;
 
+/// Memory usage
+///
+/// All values in bytes.
 #[derive(Clone)]
 pub struct MemorySnapshot {
     pub used: u64,
@@ -10,13 +13,12 @@ pub struct MemorySnapshot {
 
 impl MemorySnapshot {
     pub fn from_sysinfo(sys: &System) -> MemorySnapshot {
-        let memory = MemorySnapshot {
+        MemorySnapshot {
             used: sys.used_memory(),
             total: sys.total_memory(),
             used_swap: sys.used_swap(),
             total_swap: sys.total_swap(),
-        };
-        memory
+        }
     }
 
     pub fn total_percent(&self) -> f64 {

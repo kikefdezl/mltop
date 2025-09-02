@@ -44,6 +44,8 @@ impl CpuWidget {
         let total_bar = percentage_bar(area.width - 16, usage, &text);
         spans.extend(total_bar);
 
+        let cores_len = data.cores.len();
+
         let mut lines = vec![Line::from(spans).left_aligned()];
 
         let total_width = area.width - 6;
@@ -56,22 +58,31 @@ impl CpuWidget {
             // occupy the full required width to be well aligned
             let mut widths = vec![core_width; cpu_cols as usize];
             let remain: u16 = total_width - widths.iter().sum::<u16>();
-            for i in 0..remain as usize {
-                widths[i] += 1;
+            for width in widths.iter_mut().take(remain as usize) {
+                *width += 1;
             }
 
-            for c in 0..cpu_cols {
+            'inner: for c in 0..cpu_cols {
                 let i = (c * cpu_rows + r) as usize;
 
+                if i >= cores_len {
+                    break 'inner;
+                }
+
+                // cpu number
                 spans.push(Span::styled(
                     format!(" {:>2}", i),
                     Style::default().fg(Color::Cyan),
-                )); // cpu number
+                ));
 
-                let text = format!("{:.1}%", data.cores[i].usage);
-                let bar = percentage_bar(widths[c as usize] - 10, data.cores[i].usage, &text);
+                // bar
+                let width = widths[c as usize].saturating_sub(10);
+                let usage = data.cores[i].usage;
+                let text = format!("{:.1}%", usage);
+                let bar = percentage_bar(width, usage, &text);
                 spans.extend(bar);
 
+                // temperature with color
                 let (temp_str, color) = if data.cores[i].temp == 0.0 {
                     (" N/A ".to_string(), Color::DarkGray)
                 } else {
@@ -140,5 +151,8 @@ mod tests {
 
         let data = cpu_snap(16);
         assert_eq!(widget.grid_dimensions(&data), (4, 4));
+
+        let data = cpu_snap(32);
+        assert_eq!(widget.grid_dimensions(&data), (5, 7));
     }
 }
