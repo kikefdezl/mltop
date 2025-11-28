@@ -8,13 +8,19 @@ pub struct MessageBus {
     expiration: Duration,
 }
 
-impl MessageBus {
-    pub fn new() -> MessageBus {
+impl Default for MessageBus {
+    fn default() -> MessageBus {
         MessageBus {
             message: None,
             last_updated: Instant::now(),
             expiration: Duration::from_secs(MESSAGE_EXPIRATION_IN_SECONDS),
         }
+    }
+}
+
+impl MessageBus {
+    pub fn new() -> MessageBus {
+        MessageBus::default()
     }
 
     pub fn check(&mut self) {

@@ -11,11 +11,12 @@ use ratatui::{
     widgets::{Axis, Block, BorderType, Chart, Dataset},
 };
 
+#[derive(Default)]
 pub struct LineGraphWidget {}
 
 impl LineGraphWidget {
     pub fn new() -> LineGraphWidget {
-        LineGraphWidget {}
+        LineGraphWidget::default()
     }
 }
 

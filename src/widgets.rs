@@ -14,6 +14,7 @@ pub mod percentage_bar;
 pub mod process_table;
 pub mod state;
 
+#[derive(Default)]
 pub struct Widgets {
     pub cpu: CpuWidget,
     pub memory: MemoryWidget,

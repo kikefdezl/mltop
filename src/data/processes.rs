@@ -1,5 +1,6 @@
 use nvml_wrapper::{error::NvmlError, Nvml};
 use std::collections::HashMap;
+use std::fmt::{self, Display};
 use sysinfo::System;
 use sysinfo::ThreadKind;
 
@@ -18,16 +19,16 @@ impl ProcessType {
     }
 }
 
-impl ToString for ProcessType {
-    fn to_string(&self) -> String {
+impl Display for ProcessType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ProcessType::GpuGraphic => "GRAPHIC".to_string(),
-            ProcessType::GpuCompute => "COMPUTE".to_string(),
-            ProcessType::Cpu => "CPU".to_string(),
+            ProcessType::GpuGraphic => write!(f, "GRAPHIC"),
+            ProcessType::GpuCompute => write!(f, "COMPUTE"),
+            ProcessType::Cpu => write!(f, "CPU"),
             // For now i'll display both thread types equally,
             // I'm not sure if we really want to distiguish between the two
-            ProcessType::UserThread => "THREAD".to_string(),
-            ProcessType::KernelThread => "THREAD".to_string(),
+            ProcessType::UserThread => write!(f, "THREAD"),
+            ProcessType::KernelThread => write!(f, "THREAD"),
         }
     }
 }

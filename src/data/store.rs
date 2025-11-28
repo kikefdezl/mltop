@@ -14,7 +14,7 @@ impl StoredSnapshot {
         let (gpu_use, gpu_mem_use) = snapshot
             .gpu
             .as_ref()
-            .map(|g| (g.utilization.clone(), g.used_memory))
+            .map(|g| (g.utilization, g.used_memory))
             .unzip();
 
         StoredSnapshot {
@@ -26,13 +26,14 @@ impl StoredSnapshot {
     }
 }
 
+#[derive(Default)]
 pub struct DataStore {
     pub snapshots: Vec<StoredSnapshot>,
 }
 
 impl DataStore {
     pub fn new() -> DataStore {
-        DataStore { snapshots: vec![] }
+        DataStore::default()
     }
 
     pub fn save(&mut self, snapshot: StoredSnapshot) {
