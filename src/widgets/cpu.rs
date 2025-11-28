@@ -10,18 +10,15 @@ use ratatui::{
     widgets::{Paragraph, Widget},
 };
 
-#[derive(Default)]
-pub struct CpuWidget {}
+pub struct CpuWidget<'a> {
+    pub data: &'a CpuSnapshot,
+}
 
-impl CpuWidget {
-    pub fn new() -> CpuWidget {
-        CpuWidget::default()
-    }
-
+impl<'a> CpuWidget<'a> {
     // returns the dimensions of a grid to fit all cpu cores
     // in a pseudo-rectangular way (Rows, Cols)
-    pub fn grid_dimensions(&self, cpu_snapshot: &CpuSnapshot) -> (u16, u16) {
-        let cores = cpu_snapshot.cores.len();
+    pub fn grid_dimensions(&self) -> (u16, u16) {
+        let cores = self.data.cores.len();
         if cores <= 3 {
             return (cores as u16, 1);
         }
@@ -34,18 +31,18 @@ impl CpuWidget {
     }
 }
 
-impl CpuWidget {
-    pub fn render(&self, area: Rect, buf: &mut Buffer, data: &CpuSnapshot) {
-        let (cpu_rows, cpu_cols) = self.grid_dimensions(data);
+impl<'a> Widget for CpuWidget<'a> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let (cpu_rows, cpu_cols) = self.grid_dimensions();
 
         let mut spans = vec![Span::styled(" Total ", Style::default().fg(Color::Cyan))];
 
-        let usage = data.usage;
+        let usage = self.data.usage;
         let text = format!("{:.1}%", usage);
         let total_bar = percentage_bar(area.width - 16, usage, &text);
         spans.extend(total_bar);
 
-        let cores_len = data.cores.len();
+        let cores_len = self.data.cores.len();
 
         let mut lines = vec![Line::from(spans).left_aligned()];
 
@@ -78,21 +75,21 @@ impl CpuWidget {
 
                 // bar
                 let width = widths[c as usize].saturating_sub(10);
-                let usage = data.cores[i].usage;
+                let usage = self.data.cores[i].usage;
                 let text = format!("{:.1}%", usage);
                 let bar = percentage_bar(width, usage, &text);
                 spans.extend(bar);
 
                 // temperature with color
-                let (temp_str, color) = if data.cores[i].temp == 0.0 {
+                let (temp_str, color) = if self.data.cores[i].temp == 0.0 {
                     (" N/A ".to_string(), Color::DarkGray)
                 } else {
-                    let temp_str = format!("{:>3.0}°C", data.cores[i].temp);
-                    if data.cores[i].temp > 90.0 {
+                    let temp_str = format!("{:>3.0}°C", self.data.cores[i].temp);
+                    if self.data.cores[i].temp > 90.0 {
                         (temp_str, Color::Red)
-                    } else if data.cores[i].temp > 80.0 {
+                    } else if self.data.cores[i].temp > 80.0 {
                         (temp_str, Color::Rgb(255, 130, 0)) // orange
-                    } else if data.cores[i].temp > 70.0 {
+                    } else if self.data.cores[i].temp > 70.0 {
                         (temp_str, Color::Yellow)
                     } else {
                         (temp_str, Color::White)
@@ -130,30 +127,34 @@ mod tests {
 
     #[test]
     fn test_grid_dimensions() {
-        let widget = CpuWidget {};
+        let widget = CpuWidget { data: &cpu_snap(1) };
+        assert_eq!(widget.grid_dimensions(), (1, 1));
 
-        let data = cpu_snap(1);
-        assert_eq!(widget.grid_dimensions(&data), (1, 1));
+        let widget = CpuWidget { data: &cpu_snap(2) };
+        assert_eq!(widget.grid_dimensions(), (2, 1));
 
-        let data = cpu_snap(2);
-        assert_eq!(widget.grid_dimensions(&data), (2, 1));
+        let widget = CpuWidget { data: &cpu_snap(3) };
+        assert_eq!(widget.grid_dimensions(), (3, 1));
 
-        let data = cpu_snap(3);
-        assert_eq!(widget.grid_dimensions(&data), (3, 1));
+        let widget = CpuWidget { data: &cpu_snap(4) };
+        assert_eq!(widget.grid_dimensions(), (2, 2));
 
-        let data = cpu_snap(4);
-        assert_eq!(widget.grid_dimensions(&data), (2, 2));
+        let widget = CpuWidget { data: &cpu_snap(5) };
+        assert_eq!(widget.grid_dimensions(), (2, 3));
 
-        let data = cpu_snap(5);
-        assert_eq!(widget.grid_dimensions(&data), (2, 3));
+        let widget = CpuWidget {
+            data: &cpu_snap(12),
+        };
+        assert_eq!(widget.grid_dimensions(), (3, 4));
 
-        let data = cpu_snap(12);
-        assert_eq!(widget.grid_dimensions(&data), (3, 4));
+        let widget = CpuWidget {
+            data: &cpu_snap(16),
+        };
+        assert_eq!(widget.grid_dimensions(), (4, 4));
 
-        let data = cpu_snap(16);
-        assert_eq!(widget.grid_dimensions(&data), (4, 4));
-
-        let data = cpu_snap(32);
-        assert_eq!(widget.grid_dimensions(&data), (5, 7));
+        let widget = CpuWidget {
+            data: &cpu_snap(32),
+        };
+        assert_eq!(widget.grid_dimensions(), (5, 7));
     }
 }

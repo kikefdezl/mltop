@@ -12,53 +12,48 @@ use ratatui::{
 
 pub const GPU_WIDGET_HEIGHT: u16 = 4;
 
-#[derive(Default)]
-pub struct GpuWidget {}
-
-impl GpuWidget {
-    pub fn new() -> GpuWidget {
-        GpuWidget::default()
-    }
+pub struct GpuWidget<'a> {
+    pub data: &'a GpuSnapshot,
 }
 
-impl GpuWidget {
-    pub fn render(&self, area: Rect, buf: &mut Buffer, data: &GpuSnapshot) {
+impl<'a> Widget for GpuWidget<'a> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let block = Block::bordered()
-            .title(format!(" {}", data.name.clone()))
+            .title(format!(" {}", self.data.name.clone()))
             .border_type(BorderType::Rounded)
             .padding(Padding::new(1, 1, 0, 0));
 
         let mut spans = vec![Span::styled("TEMP:", Style::default().fg(Color::Cyan))];
-        spans.push(Span::raw(format!(" {}°C", data.temperature)));
+        spans.push(Span::raw(format!(" {}°C", self.data.temperature)));
 
         spans.push(Span::styled("   POW:", Style::default().fg(Color::Cyan)));
         spans.push(Span::raw(format!(
             " {} W / {} W",
-            data.power_usage / 1000,
-            data.max_power / 1000
+            self.data.power_usage / 1000,
+            self.data.max_power / 1000
         )));
 
         spans.push(Span::styled("   FAN:", Style::default().fg(Color::Cyan)));
-        spans.push(Span::raw(format!("  {:.0}%", data.fan_speed)));
+        spans.push(Span::raw(format!("  {:.0}%", self.data.fan_speed)));
 
         let mut lines = vec![Line::from(spans).alignment(Alignment::Left)];
 
         let mut spans = vec![Span::styled("GPU", Style::default().fg(Color::Cyan))];
         spans.extend(percentage_bar(
             area.width / 3 - 5,
-            data.utilization as f32,
-            &format!("{}%", data.utilization),
+            self.data.utilization as f32,
+            &format!("{}%", self.data.utilization),
         ));
 
         spans.push(Span::styled(" MEM", Style::default().fg(Color::Cyan)));
-        let mem_perc: f32 = (data.used_memory as f32 / data.max_memory as f32) * 100.0;
+        let mem_perc: f32 = (self.data.used_memory as f32 / self.data.max_memory as f32) * 100.0;
         spans.extend(percentage_bar(
             area.width / 3 - 5,
             mem_perc,
             &format!(
                 "{:.2}Gi/{:.2}Gi",
-                (data.used_memory as f32) / BYTES_PER_GB_FLOAT,
-                (data.max_memory as f32) / BYTES_PER_GB_FLOAT
+                (self.data.used_memory as f32) / BYTES_PER_GB_FLOAT,
+                (self.data.max_memory as f32) / BYTES_PER_GB_FLOAT
             ),
         ));
         lines.push(Line::from(spans).alignment(Alignment::Left));

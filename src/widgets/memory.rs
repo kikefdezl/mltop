@@ -11,24 +11,19 @@ use ratatui::{
 
 pub const MEMORY_WIDGET_HEIGHT: u16 = 1;
 
-#[derive(Default)]
-pub struct MemoryWidget {}
-
-impl MemoryWidget {
-    pub fn new() -> MemoryWidget {
-        MemoryWidget::default()
-    }
+pub struct MemoryWidget<'a> {
+    pub data: &'a MemorySnapshot,
 }
 
-impl MemoryWidget {
-    pub fn render(&self, area: Rect, buf: &mut Buffer, data: &MemorySnapshot) {
+impl<'a> Widget for MemoryWidget<'a> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         // memory
         let mut spans = vec![Span::styled(" Memory", Style::default().fg(Color::Yellow))];
-        let percentage = data.used as f32 / data.total as f32 * 100.0;
+        let percentage = self.data.used as f32 / self.data.total as f32 * 100.0;
         let text = format!(
             "{:.1}G/{:.1}G",
-            data.used as f32 / BYTES_PER_GB as f32,
-            data.total as f32 / BYTES_PER_GB as f32
+            self.data.used as f32 / BYTES_PER_GB as f32,
+            self.data.total as f32 / BYTES_PER_GB as f32
         );
         let mem_bar_width = (area.width / 2) - 12;
         spans.extend(percentage_bar(mem_bar_width, percentage, &text));
@@ -38,11 +33,11 @@ impl MemoryWidget {
             "    Swap",
             Style::default().fg(Color::Yellow),
         )]);
-        let percentage = data.used_swap as f32 / data.total_swap as f32 * 100.0;
+        let percentage = self.data.used_swap as f32 / self.data.total_swap as f32 * 100.0;
         let text = format!(
             "{:.1}G/{:.1}G",
-            data.used_swap as f32 / BYTES_PER_GB as f32,
-            data.total_swap as f32 / BYTES_PER_GB as f32
+            self.data.used_swap as f32 / BYTES_PER_GB as f32,
+            self.data.total_swap as f32 / BYTES_PER_GB as f32
         );
         let swap_bar_width = area.width - mem_bar_width - 26;
         spans.extend(percentage_bar(swap_bar_width, percentage, &text));
