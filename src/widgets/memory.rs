@@ -11,11 +11,12 @@ use ratatui::{
 
 pub const MEMORY_WIDGET_HEIGHT: u16 = 1;
 
+#[derive(Default)]
 pub struct MemoryWidget {}
 
 impl MemoryWidget {
     pub fn new() -> MemoryWidget {
-        MemoryWidget {}
+        MemoryWidget::default()
     }
 }
 

@@ -10,11 +10,12 @@ use ratatui::{
     widgets::{Paragraph, Widget},
 };
 
+#[derive(Default)]
 pub struct CpuWidget {}
 
 impl CpuWidget {
     pub fn new() -> CpuWidget {
-        CpuWidget {}
+        CpuWidget::default()
     }
 
     // returns the dimensions of a grid to fit all cpu cores

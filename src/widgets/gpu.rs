@@ -12,11 +12,12 @@ use ratatui::{
 
 pub const GPU_WIDGET_HEIGHT: u16 = 4;
 
+#[derive(Default)]
 pub struct GpuWidget {}
 
 impl GpuWidget {
     pub fn new() -> GpuWidget {
-        GpuWidget {}
+        GpuWidget::default()
     }
 }
 

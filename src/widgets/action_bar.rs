@@ -16,11 +16,12 @@ const FOOTER: [(&str, &str); 4] = [
 const HIGHLIGHT_STYLE: Style = Style::new().bg(Color::White).fg(Color::Black);
 const MESSAGE_STYLE: Style = Style::new().bg(Color::Red).fg(Color::Black);
 
+#[derive(Default)]
 pub struct ActionBarWidget {}
 
 impl ActionBarWidget {
     pub fn new() -> ActionBarWidget {
-        ActionBarWidget {}
+        ActionBarWidget::default()
     }
 
     pub fn render(

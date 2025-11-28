@@ -1,16 +1,13 @@
 use crate::widgets::state::process_table::ProcessTableState;
 
+#[derive(Default)]
 pub enum Mode {
+    #[default]
     Normal,
     Filter,
 }
 
-impl Mode {
-    fn default() -> Mode {
-        Mode::Normal
-    }
-}
-
+#[derive(Default)]
 pub struct State {
     pub mode: Mode,
     pub filter_by: String,

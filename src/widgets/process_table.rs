@@ -23,11 +23,12 @@ const CONSTRAINTS: [Constraint; 6] = [
     Constraint::Min(10),
 ];
 
+#[derive(Default)]
 pub struct ProcessTableWidget {}
 
 impl ProcessTableWidget {
     pub fn new() -> ProcessTableWidget {
-        ProcessTableWidget {}
+        ProcessTableWidget::default()
     }
 
     pub fn render(

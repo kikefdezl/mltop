@@ -18,15 +18,17 @@ pub struct ProcessTableState {
     pub ratatui_table_state: TableState,
 }
 
-impl ProcessTableState {
-    pub fn default() -> ProcessTableState {
+impl Default for ProcessTableState {
+    fn default() -> ProcessTableState {
         ProcessTableState {
             sort_by: ProcessesSortBy::default(),
             show_threads: false,
             ratatui_table_state: TableState::default(),
         }
     }
+}
 
+impl ProcessTableState {
     pub fn is_active(&self) -> bool {
         self.ratatui_table_state.selected().is_some()
     }
@@ -54,7 +56,7 @@ impl ProcessTableState {
         match self.ratatui_table_state.selected() {
             None => self.activate(),
             Some(s) => {
-                if s <= 0 {
+                if s == 0 {
                     self.ratatui_table_state.select(Some(s))
                 } else {
                     self.ratatui_table_state.select(Some(s - 1))
