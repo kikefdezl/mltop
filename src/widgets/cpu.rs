@@ -80,6 +80,9 @@ impl<'a> Widget for CpuWidget<'a> {
                 let bar = percentage_bar(width, usage, &text);
                 spans.extend(bar);
 
+                // TODO: Show something red again if the core temperature gets too high.
+                // Maybe the sidebars of the core itself (the white brackets).
+                //
                 // temperature with color
                 // let (temp_str, color) = if self.data.cores[i].temp == 0.0 {
                 // (" N/A ".to_string(), Color::DarkGray)
