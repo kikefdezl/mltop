@@ -18,19 +18,19 @@ pub struct MemoryWidget<'a> {
 impl<'a> Widget for MemoryWidget<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         // memory
-        let mut spans = vec![Span::styled(" Memory", Style::default().fg(Color::Yellow))];
+        let mut spans = vec![Span::styled("  Memory", Style::default().fg(Color::Yellow))];
         let percentage = self.data.used as f32 / self.data.total as f32 * 100.0;
         let text = format!(
             "{:.1}G/{:.1}G",
             self.data.used as f32 / BYTES_PER_GB as f32,
             self.data.total as f32 / BYTES_PER_GB as f32
         );
-        let mem_bar_width = (area.width / 2) - 12;
+        let mem_bar_width = (area.width / 2) - 10;
         spans.extend(percentage_bar(mem_bar_width, percentage, &text));
 
         // swap
         spans.extend(vec![Span::styled(
-            "    Swap",
+            " Swp",
             Style::default().fg(Color::Yellow),
         )]);
         let percentage = self.data.used_swap as f32 / self.data.total_swap as f32 * 100.0;
@@ -39,7 +39,7 @@ impl<'a> Widget for MemoryWidget<'a> {
             self.data.used_swap as f32 / BYTES_PER_GB as f32,
             self.data.total_swap as f32 / BYTES_PER_GB as f32
         );
-        let swap_bar_width = area.width - mem_bar_width - 26;
+        let swap_bar_width = area.width - mem_bar_width - 22;
         spans.extend(percentage_bar(swap_bar_width, percentage, &text));
 
         Paragraph::new(Line::from(spans))

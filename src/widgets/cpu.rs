@@ -35,7 +35,7 @@ impl<'a> Widget for CpuWidget<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let (cpu_rows, cpu_cols) = self.grid_dimensions();
 
-        let mut spans = vec![Span::styled(" Total ", Style::default().fg(Color::Cyan))];
+        let mut spans = vec![Span::styled("  Total ", Style::default().fg(Color::Cyan))];
 
         let usage = self.data.usage;
         let text = format!("{:.1}%", usage);
@@ -69,33 +69,33 @@ impl<'a> Widget for CpuWidget<'a> {
 
                 // cpu number
                 spans.push(Span::styled(
-                    format!(" {:>2}", i),
+                    format!("  {:>2}", i),
                     Style::default().fg(Color::Cyan),
                 ));
 
                 // bar
-                let width = widths[c as usize].saturating_sub(10);
+                let width = widths[c as usize].saturating_sub(7);
                 let usage = self.data.cores[i].usage;
-                let text = format!("{:.1}%", usage);
+                let text = format!("{:.1}%{:>3.0}°C", usage, self.data.cores[i].temp);
                 let bar = percentage_bar(width, usage, &text);
                 spans.extend(bar);
 
                 // temperature with color
-                let (temp_str, color) = if self.data.cores[i].temp == 0.0 {
-                    (" N/A ".to_string(), Color::DarkGray)
-                } else {
-                    let temp_str = format!("{:>3.0}°C", self.data.cores[i].temp);
-                    if self.data.cores[i].temp > 90.0 {
-                        (temp_str, Color::Red)
-                    } else if self.data.cores[i].temp > 80.0 {
-                        (temp_str, Color::Rgb(255, 130, 0)) // orange
-                    } else if self.data.cores[i].temp > 70.0 {
-                        (temp_str, Color::Yellow)
-                    } else {
-                        (temp_str, Color::White)
-                    }
-                };
-                spans.push(Span::styled(temp_str, Style::default().fg(color)));
+                // let (temp_str, color) = if self.data.cores[i].temp == 0.0 {
+                // (" N/A ".to_string(), Color::DarkGray)
+                // } else {
+                // let temp_str = format!("{:>3.0}°C", self.data.cores[i].temp);
+                // if self.data.cores[i].temp > 90.0 {
+                // (temp_str, Color::Red)
+                // } else if self.data.cores[i].temp > 80.0 {
+                // (temp_str, Color::Rgb(255, 130, 0)) // orange
+                // } else if self.data.cores[i].temp > 70.0 {
+                // (temp_str, Color::Yellow)
+                // } else {
+                // (temp_str, Color::White)
+                // }
+                // };
+                // spans.push(Span::styled(temp_str, Style::default().fg(color)));
             }
             lines.push(Line::from(spans));
         }
