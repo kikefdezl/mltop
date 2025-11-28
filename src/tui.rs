@@ -7,6 +7,7 @@ use crossterm::event::{
     self, Event as CrosstermEvent, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
 };
 use ratatui::prelude::{Backend, CrosstermBackend};
+use ratatui::widgets::{StatefulWidget, Widget};
 use ratatui::{
     backend::TestBackend,
     layout::{Constraint, Direction, Layout},
@@ -21,11 +22,13 @@ use crate::event::Event;
 use crate::message_bus::MessageBus;
 use crate::state::{Mode, State};
 use crate::system::{FakeSystem, RealSystem, SystemMonitor};
-use crate::widgets::gpu::GPU_WIDGET_HEIGHT;
-use crate::widgets::line_graph::LineGraphRenderContext;
+use crate::widgets::action_bar::ActionBarWidget;
+use crate::widgets::cpu::CpuWidget;
+use crate::widgets::gpu::{GpuWidget, GPU_WIDGET_HEIGHT};
+use crate::widgets::line_graph::LineGraphWidget;
+use crate::widgets::memory::MemoryWidget;
 use crate::widgets::memory::MEMORY_WIDGET_HEIGHT;
 use crate::widgets::process_table::ProcessTableWidget;
-use crate::widgets::Widgets;
 
 pub struct Tui<S: SystemMonitor, B: Backend> {
     system: S,
@@ -36,7 +39,6 @@ pub struct Tui<S: SystemMonitor, B: Backend> {
     refresh_rate_ms: u64,
     state: State,
     terminal: Terminal<B>,
-    widgets: Widgets,
 }
 
 impl Tui<RealSystem, CrosstermBackend<Stdout>> {
@@ -65,7 +67,6 @@ impl Default for Tui<RealSystem, CrosstermBackend<Stdout>> {
             refresh_rate_ms: REFRESH_RATE_MILLIS,
             state: State::new(),
             terminal: ratatui::init(),
-            widgets: Widgets::new(),
         }
     }
 }
@@ -180,8 +181,34 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
 
     pub fn render(&mut self) {
         let _ = self.terminal.draw(|frame| {
+            // -- build widgets --
+            let cpu = CpuWidget {
+                data: &self.data.cpu,
+            };
+            let memory = MemoryWidget {
+                data: &self.data.memory,
+            };
+            let line_graph = LineGraphWidget {
+                data: &self.data_store,
+                max_gpu_mem: self.data.gpu.as_ref().map(|g| g.max_memory),
+            };
+            let gpu = self.data.gpu.as_ref().map(|gd| GpuWidget { data: gd });
+            let filter_by = match self.state.mode {
+                Mode::Filter => Some(self.state.filter_by.as_str()),
+                _ => None,
+            };
+            let process_table = ProcessTableWidget {
+                data: &self.data.processes,
+                filter_by,
+            };
+            let action_bar = ActionBarWidget {
+                message: self.message_bus.read(),
+                filter_by,
+            };
+
+            // -- build layout --
             let mut constraints = vec![
-                Constraint::Length(self.widgets.cpu().grid_dimensions(&self.data.cpu).0 + 1),
+                Constraint::Length(cpu.grid_dimensions().0 + 1),
                 Constraint::Length(MEMORY_WIDGET_HEIGHT),
                 Constraint::Max(20),
             ];
@@ -195,27 +222,6 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
                 .constraints(constraints)
                 .split(frame.area());
 
-            self.widgets
-                .cpu()
-                .render(areas[0], frame.buffer_mut(), &self.data.cpu);
-            self.widgets
-                .memory()
-                .render(areas[1], frame.buffer_mut(), &self.data.memory);
-            let ctx = LineGraphRenderContext {
-                area: areas[2],
-                buf: frame.buffer_mut(),
-                data: &self.data_store,
-                max_gpu_mem: self.data.gpu.as_ref().map(|g| g.max_memory),
-            };
-            self.widgets.line_graph().render(ctx);
-            if self.data.has_gpu() {
-                self.widgets.gpu().render(
-                    areas[3],
-                    frame.buffer_mut(),
-                    &self.data.gpu.clone().unwrap(), // TODO: Check if can avoid clone
-                );
-            }
-
             // take the remaining area and split it for the table of
             // processes and the action bar.
             // They are only rendered if there's enough vertical space
@@ -224,24 +230,16 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
                 .constraints([Constraint::Min(0), Constraint::Length(1)])
                 .split(*areas.last().unwrap());
 
-            let filter_by = match self.state.mode {
-                Mode::Filter => Some(self.state.filter_by.as_str()),
-                _ => None,
-            };
-
-            self.widgets.process_table().render(
-                remaining_areas[0],
-                frame.buffer_mut(),
-                &mut self.state.process_table,
-                &self.data.processes,
-                filter_by,
-            );
-            self.widgets.action_bar.render(
-                remaining_areas[1],
-                frame.buffer_mut(),
-                self.message_bus.read(),
-                filter_by,
-            );
+            // -- render widgets --
+            let buf = frame.buffer_mut();
+            cpu.render(areas[0], buf);
+            memory.render(areas[1], buf);
+            line_graph.render(areas[2], buf);
+            if let Some(g) = gpu {
+                g.render(areas[3], buf);
+            }
+            process_table.render(remaining_areas[0], buf, &mut self.state.process_table);
+            action_bar.render(remaining_areas[1], frame.buffer_mut());
         });
     }
 
@@ -299,12 +297,11 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
             _ => None,
         };
         if let Some(selected_row) = self.state.selected_row() {
-            if let Some(pid) = ProcessTableWidget::get_nth_pid(
-                self.data.processes.clone(),
-                &self.state.process_table,
+            let table = ProcessTableWidget {
+                data: &self.data.processes,
                 filter_by,
-                selected_row,
-            ) {
+            };
+            if let Some(pid) = table.get_nth_pid(selected_row, &mut self.state.process_table) {
                 self.system.kill_process(pid as usize);
                 self.message_bus.send(format!("Killed pid {}", pid));
             }
@@ -348,7 +345,6 @@ impl Tui<FakeSystem, TestBackend> {
             refresh_rate_ms: REFRESH_RATE_MILLIS,
             state: State::new(),
             terminal: Terminal::new(backend).unwrap(),
-            widgets: Widgets::new(),
         }
     }
 }

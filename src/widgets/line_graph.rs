@@ -3,35 +3,23 @@ use crate::data::store::{DataStore, StoredSnapshot};
 use ratatui::layout::Constraint;
 
 use ratatui::style::{Color, Style};
-use ratatui::widgets::{GraphType, Widget};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
     symbols,
-    widgets::{Axis, Block, BorderType, Chart, Dataset},
+    widgets::{Axis, Block, BorderType, Chart, Dataset, GraphType, Widget},
 };
 
-#[derive(Default)]
-pub struct LineGraphWidget {}
-
-impl LineGraphWidget {
-    pub fn new() -> LineGraphWidget {
-        LineGraphWidget::default()
-    }
-}
-
-pub struct LineGraphRenderContext<'a> {
-    pub area: Rect,
-    pub buf: &'a mut Buffer,
+pub struct LineGraphWidget<'a> {
     pub data: &'a DataStore,
     pub max_gpu_mem: Option<u64>,
 }
 
-impl LineGraphWidget {
-    pub fn render(&self, ctx: LineGraphRenderContext) {
+impl<'a> Widget for LineGraphWidget<'a> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let mut datasets = vec![];
 
-        let data: Vec<&StoredSnapshot> = ctx
+        let data: Vec<&StoredSnapshot> = self
             .data
             .snapshots
             .iter()
@@ -66,7 +54,7 @@ impl LineGraphWidget {
             .map(|(t, g)| {
                 (
                     t as f64,
-                    (g as f64 / ctx.max_gpu_mem.unwrap() as f64 * 100.0),
+                    (g as f64 / self.max_gpu_mem.unwrap() as f64 * 100.0),
                 )
             })
             .collect();
@@ -126,6 +114,6 @@ impl LineGraphWidget {
                     .labels(["0", "100"]),
             )
             .hidden_legend_constraints((Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)))
-            .render(ctx.area, ctx.buf);
+            .render(area, buf);
     }
 }

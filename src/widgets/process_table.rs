@@ -23,29 +23,22 @@ const CONSTRAINTS: [Constraint; 6] = [
     Constraint::Min(10),
 ];
 
-#[derive(Default)]
-pub struct ProcessTableWidget {}
+pub struct ProcessTableWidget<'a> {
+    pub data: &'a ProcessesSnapshot,
+    pub filter_by: Option<&'a str>,
+}
 
-impl ProcessTableWidget {
-    pub fn new() -> ProcessTableWidget {
-        ProcessTableWidget::default()
-    }
+impl<'a> StatefulWidget for ProcessTableWidget<'a> {
+    type State = ProcessTableState;
 
-    pub fn render(
-        &self,
-        area: Rect,
-        buf: &mut Buffer,
-        state: &mut ProcessTableState,
-        data: &ProcessesSnapshot,
-        filter_by: Option<&str>,
-    ) {
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut ProcessTableState) {
         let header = self.create_header(state);
 
-        let processes = Self::process_data(data.clone(), state, filter_by);
+        let processes = self.get_processes(state);
 
         let rows: Vec<Row> = processes
             .into_iter()
-            .map(|d| Self::create_row(d, filter_by))
+            .map(|d| Self::create_row(d, self.filter_by))
             .collect();
 
         Table::new(rows, CONSTRAINTS)
@@ -53,7 +46,9 @@ impl ProcessTableWidget {
             .row_highlight_style(Style::new().reversed())
             .render(area, buf, &mut state.ratatui_table_state);
     }
+}
 
+impl<'a> ProcessTableWidget<'a> {
     fn create_header(&self, state: &ProcessTableState) -> Row<'static> {
         let header_style = Style::default().fg(Color::Black).bg(Color::White);
         let (cpu, mem) = match &state.sort_by {
@@ -69,7 +64,7 @@ impl ProcessTableWidget {
             .height(1)
     }
 
-    fn create_row<'a>(data: Process, filter_by: Option<&'a str>) -> Row<'a> {
+    fn create_row<'b>(data: Process, filter_by: Option<&'b str>) -> Row<'b> {
         let color = match data.type_ {
             ProcessType::GpuGraphic => GPU_GRAPHIC_COLOR,
             ProcessType::GpuCompute => GPU_COMPUTE_COLOR,
@@ -171,12 +166,8 @@ impl ProcessTableWidget {
         Cell::from(Line::from(spans))
     }
 
-    pub fn process_data(
-        data: ProcessesSnapshot,
-        state: &ProcessTableState,
-        filter_by: Option<&str>,
-    ) -> Vec<Process> {
-        let mut processes = Self::filter_processes(data.processes, filter_by);
+    pub fn get_processes(&'a self, state: &mut ProcessTableState) -> Vec<Process> {
+        let mut processes = Self::filter_processes(self.data.processes.clone(), self.filter_by);
         processes = Self::sort_processes(processes, &state.sort_by);
         processes = Self::filter_threads(processes, state.show_threads);
         processes
@@ -215,12 +206,7 @@ impl ProcessTableWidget {
         }
     }
 
-    pub fn get_nth_pid(
-        data: ProcessesSnapshot,
-        state: &ProcessTableState,
-        filter_by: Option<&str>,
-        n: usize,
-    ) -> Option<u32> {
-        Some(Self::process_data(data, state, filter_by).get(n)?.pid)
+    pub fn get_nth_pid(&self, n: usize, state: &mut ProcessTableState) -> Option<u32> {
+        Some(self.get_processes(state).get(n)?.pid)
     }
 }

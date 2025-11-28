@@ -99,16 +99,12 @@ impl ProcessesSnapshot {
             .collect();
 
         // find which ones are GPU and mark them as such
-        if nvml.is_some() {
-            let nvml = nvml.as_ref().unwrap();
-
-            match _gpu_compute_pids(&nvml) {
-                Ok(pids) => _update_process_type(pids, &mut processes, ProcessType::GpuCompute),
-                Err(_) => {}
+        if let Some(n) = nvml {
+            if let Ok(pids) = _gpu_graphics_pids(n) {
+                _update_process_type(pids, &mut processes, ProcessType::GpuCompute)
             }
-            match _gpu_graphics_pids(&nvml) {
-                Ok(pids) => _update_process_type(pids, &mut processes, ProcessType::GpuGraphic),
-                Err(_) => {}
+            if let Ok(pids) = _gpu_graphics_pids(n) {
+                _update_process_type(pids, &mut processes, ProcessType::GpuGraphic)
             }
         }
 
