@@ -50,7 +50,7 @@ impl<'a> StatefulWidget for ProcessTableWidget<'a> {
 
 impl<'a> ProcessTableWidget<'a> {
     fn create_header(&self, state: &ProcessTableState) -> Row<'static> {
-        let header_style = Style::default().fg(Color::Black).bg(Color::White);
+        let header_style = Style::default().fg(Color::Black).bg(Color::Green);
         let (cpu, mem) = match &state.sort_by {
             ProcessesSortBy::CPU => ("▽CPU%", "  MEM%"),
             ProcessesSortBy::MEM => (" CPU%", " ▽MEM%"),
