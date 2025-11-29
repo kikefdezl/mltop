@@ -1,11 +1,11 @@
-use self::colors::ColorConfig;
+use self::theme::Theme;
 use serde::Deserialize;
 
 use std::env::home_dir;
 use std::fs::read_to_string;
 use std::sync::OnceLock;
 
-pub mod colors;
+pub mod theme;
 
 pub const REFRESH_RATE_MILLIS: u64 = 1000;
 pub const GRAPH_X_AXIS_WINDOW_IN_SECONDS: usize = 120;
@@ -17,7 +17,7 @@ pub static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Default, Deserialize, Debug)]
 pub struct Config {
-    pub colors: ColorConfig,
+    pub theme: Theme,
 }
 
 impl Config {

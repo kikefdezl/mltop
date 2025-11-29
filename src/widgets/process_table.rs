@@ -47,10 +47,10 @@ impl<'a> StatefulWidget for ProcessTableWidget<'a> {
 
 impl<'a> ProcessTableWidget<'a> {
     fn create_header(&self, state: &ProcessTableState) -> Row<'static> {
-        let colors = &get_config().colors;
+        let theme = &get_config().theme;
         let header_style = Style::default()
-            .fg(colors.processes_header_fg)
-            .bg(colors.processes_header_bg);
+            .fg(theme.processes_header_fg)
+            .bg(theme.processes_header_bg);
         let (cpu, mem) = match &state.sort_by {
             ProcessesSortBy::CPU => ("▽CPU%", "  MEM%"),
             ProcessesSortBy::MEM => (" CPU%", " ▽MEM%"),
@@ -65,13 +65,13 @@ impl<'a> ProcessTableWidget<'a> {
     }
 
     fn create_row<'b>(data: Process, filter_by: Option<&'b str>) -> Row<'b> {
-        let colors = &get_config().colors;
+        let theme = &get_config().theme;
         let color = match data.type_ {
-            ProcessType::GpuGraphic => colors.processes_gpu_graphic,
-            ProcessType::GpuCompute => colors.processes_gpu_compute,
-            ProcessType::UserThread => colors.processes_thread,
-            ProcessType::KernelThread => colors.processes_thread,
-            _ => colors.processes_cpu,
+            ProcessType::GpuGraphic => theme.processes_gpu_graphic,
+            ProcessType::GpuCompute => theme.processes_gpu_compute,
+            ProcessType::UserThread => theme.processes_thread,
+            ProcessType::KernelThread => theme.processes_thread,
+            _ => theme.processes_cpu,
         };
 
         let cpu_text_color = if data.cpu_usage < 0.05 {
@@ -153,7 +153,7 @@ impl<'a> ProcessTableWidget<'a> {
                 // Apply magenta/bold for bin section
                 if s < bin_end && e > bin_start {
                     style = style
-                        .fg(get_config().colors.processes_bin_name)
+                        .fg(get_config().theme.processes_bin_name)
                         .add_modifier(Modifier::BOLD);
                 }
 

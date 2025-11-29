@@ -19,7 +19,7 @@ impl<'a> Widget for LineGraphWidget<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut datasets = vec![];
 
-        let colors = &get_config().colors;
+        let theme = &get_config().theme;
 
         let data: Vec<&StoredSnapshot> = self
             .data
@@ -42,7 +42,7 @@ impl<'a> Widget for LineGraphWidget<'a> {
                 Dataset::default()
                     .name("GPU %")
                     .marker(symbols::Marker::Braille)
-                    .style(Style::default().fg(colors.line_graph_gpu_use))
+                    .style(Style::default().fg(theme.line_graph_gpu_use))
                     .graph_type(GraphType::Line)
                     .data(&gpu_use_data),
             );
@@ -65,7 +65,7 @@ impl<'a> Widget for LineGraphWidget<'a> {
                 Dataset::default()
                     .name("GPU MEM%")
                     .marker(symbols::Marker::Braille)
-                    .style(Style::default().fg(colors.line_graph_gpu_mem))
+                    .style(Style::default().fg(theme.line_graph_gpu_mem))
                     .graph_type(GraphType::Line)
                     .data(&gpu_mem_data),
             );
@@ -81,7 +81,7 @@ impl<'a> Widget for LineGraphWidget<'a> {
             Dataset::default()
                 .name("CPU %")
                 .marker(symbols::Marker::Braille)
-                .style(Style::default().fg(colors.line_graph_cpu))
+                .style(Style::default().fg(theme.line_graph_cpu))
                 .graph_type(GraphType::Line)
                 .data(&cpu_data),
         );
@@ -96,7 +96,7 @@ impl<'a> Widget for LineGraphWidget<'a> {
             Dataset::default()
                 .name("MEM %")
                 .marker(symbols::Marker::Braille)
-                .style(Style::default().fg(colors.line_graph_mem))
+                .style(Style::default().fg(theme.line_graph_mem))
                 .graph_type(GraphType::Line)
                 .data(&mem_data),
         );

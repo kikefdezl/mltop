@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 #[serde(default)]
-pub struct ColorConfig {
+pub struct Theme {
     pub line_graph_cpu: Color,
     pub line_graph_mem: Color,
     pub line_graph_gpu_use: Color,
@@ -18,9 +18,9 @@ pub struct ColorConfig {
     pub processes_bin_name: Color,
 }
 
-impl Default for ColorConfig {
+impl Default for Theme {
     fn default() -> Self {
-        ColorConfig {
+        Theme {
             line_graph_cpu: Color::Red,
             line_graph_mem: Color::Green,
             line_graph_gpu_use: Color::Blue,
