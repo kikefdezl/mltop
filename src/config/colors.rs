@@ -4,6 +4,11 @@ use serde::Deserialize;
 #[derive(Deserialize, Debug)]
 #[serde(default)]
 pub struct ColorConfig {
+    pub line_graph_cpu: Color,
+    pub line_graph_mem: Color,
+    pub line_graph_gpu_use: Color,
+    pub line_graph_gpu_mem: Color,
+
     pub processes_header_fg: Color,
     pub processes_header_bg: Color,
     pub processes_cpu: Color,
@@ -16,6 +21,11 @@ pub struct ColorConfig {
 impl Default for ColorConfig {
     fn default() -> Self {
         ColorConfig {
+            line_graph_cpu: Color::Red,
+            line_graph_mem: Color::Green,
+            line_graph_gpu_use: Color::Blue,
+            line_graph_gpu_mem: Color::Yellow,
+
             processes_header_fg: Color::Black,
             processes_header_bg: Color::White,
             processes_cpu: Color::White,
