@@ -16,8 +16,8 @@ use ratatui::{
 
 use crate::config::REFRESH_RATE_MILLIS;
 use crate::data::store::{DataStore, StoredSnapshot};
+use crate::data::system_data::SystemData;
 use crate::data::update_kind::DataUpdateKind;
-use crate::data::Data;
 use crate::event::Event;
 use crate::message_bus::MessageBus;
 use crate::state::{Mode, State};
@@ -32,7 +32,7 @@ use crate::widgets::process_table::ProcessTableWidget;
 
 pub struct Tui<S: SystemMonitor, B: Backend> {
     system: S,
-    data: Data,
+    data: SystemData,
     data_store: DataStore,
     exit: bool,
     message_bus: MessageBus,
@@ -52,7 +52,7 @@ impl Default for Tui<RealSystem, CrosstermBackend<Stdout>> {
         let mut message_bus = MessageBus::new();
 
         let mut system = RealSystem::default();
-        let data = Data::new_from_snapshot(system.collect_snapshot(&DataUpdateKind::all()));
+        let data = SystemData::new_from_snapshot(system.collect_snapshot(&DataUpdateKind::all()));
 
         if !system.gpu_available() {
             message_bus.send("No GPU found.".to_string())
@@ -330,7 +330,7 @@ impl Tui<FakeSystem, TestBackend> {
     pub fn fake(mut system: FakeSystem, backend: TestBackend) -> Self {
         let mut message_bus = MessageBus::new();
 
-        let data = Data::new_from_snapshot(system.collect_snapshot(&DataUpdateKind::all()));
+        let data = SystemData::new_from_snapshot(system.collect_snapshot(&DataUpdateKind::all()));
 
         if !system.gpu_available() {
             message_bus.send("No GPU found.".to_string())
