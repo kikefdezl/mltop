@@ -1,3 +1,4 @@
+use mltop::config::init_config;
 use mltop::constants::BYTES_PER_GB;
 use mltop::data::cpu::{CoreSnapshot, CpuSnapshot};
 use mltop::data::gpu::GpuSnapshot;
@@ -55,6 +56,7 @@ fn system() -> FakeSystem {
 
 #[test]
 fn test_large_system() {
+    init_config();
     let system: FakeSystem = system();
     let backend = TestBackend::new(120, 40);
     let mut app = Tui::fake(system, backend);

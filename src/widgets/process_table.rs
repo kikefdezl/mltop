@@ -1,3 +1,4 @@
+use crate::config::get_config;
 use crate::constants::BYTES_PER_MB;
 use crate::data::processes::{Process, ProcessType, ProcessesSnapshot};
 use crate::widgets::state::process_table::{ProcessTableState, ProcessesSortBy};
@@ -9,10 +10,6 @@ use ratatui::{
     text::{Line, Span, Text},
     widgets::{Cell, Row, Table},
 };
-
-const GPU_COMPUTE_COLOR: Color = Color::Magenta;
-const GPU_GRAPHIC_COLOR: Color = Color::Yellow;
-const THREAD_COLOR: Color = Color::DarkGray;
 
 const CONSTRAINTS: [Constraint; 6] = [
     Constraint::Length(6),
@@ -50,7 +47,10 @@ impl<'a> StatefulWidget for ProcessTableWidget<'a> {
 
 impl<'a> ProcessTableWidget<'a> {
     fn create_header(&self, state: &ProcessTableState) -> Row<'static> {
-        let header_style = Style::default().fg(Color::Black).bg(Color::Green);
+        let theme = &get_config().theme;
+        let header_style = Style::default()
+            .fg(theme.processes_header_fg)
+            .bg(theme.processes_header_bg);
         let (cpu, mem) = match &state.sort_by {
             ProcessesSortBy::CPU => ("▽CPU%", "  MEM%"),
             ProcessesSortBy::MEM => (" CPU%", " ▽MEM%"),
@@ -65,21 +65,22 @@ impl<'a> ProcessTableWidget<'a> {
     }
 
     fn create_row<'b>(data: Process, filter_by: Option<&'b str>) -> Row<'b> {
+        let theme = &get_config().theme;
         let color = match data.type_ {
-            ProcessType::GpuGraphic => GPU_GRAPHIC_COLOR,
-            ProcessType::GpuCompute => GPU_COMPUTE_COLOR,
-            ProcessType::UserThread => THREAD_COLOR,
-            ProcessType::KernelThread => THREAD_COLOR,
-            _ => Color::White,
+            ProcessType::GpuGraphic => theme.processes_gpu_graphic,
+            ProcessType::GpuCompute => theme.processes_gpu_compute,
+            ProcessType::UserThread => theme.processes_thread,
+            ProcessType::KernelThread => theme.processes_thread,
+            _ => theme.processes_cpu,
         };
 
         let cpu_text_color = if data.cpu_usage < 0.05 {
-            Color::White
+            Color::DarkGray
         } else {
             color
         };
         let mem_text_color = if data.memory_usage < 0.05 {
-            Color::White
+            Color::DarkGray
         } else {
             color
         };
@@ -151,7 +152,9 @@ impl<'a> ProcessTableWidget<'a> {
 
                 // Apply magenta/bold for bin section
                 if s < bin_end && e > bin_start {
-                    style = style.fg(Color::Magenta).add_modifier(Modifier::BOLD);
+                    style = style
+                        .fg(get_config().theme.processes_bin_name)
+                        .add_modifier(Modifier::BOLD);
                 }
 
                 // Apply green background for filter match

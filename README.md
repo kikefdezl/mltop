@@ -25,36 +25,25 @@ A resource monitoring tool designed for working with Machine Learning tasks
 
 **mltop** requires NVIDIA drivers to monitor NVIDIA GPU information.
 
-**mltop** is written in Rust.
-
-
 ## Installation
 
-You can easily install **mltop** by compiling from source with the Rust toolchain.
-
-
-### Building from Source
+You can install **mltop** using Cargo:
 
 1. Make sure you have Rust (Cargo) installed.
-
 2. Clone the repository:
-
 ```bash
 git clone https://github.com/kikefdezl/mltop.git
-cd mltop
 ```
 
 3. Build & run the project:
-
 ```bash
+cd mltop
 cargo build --release
 ```
 
 This will compile the binary into `target/release/mltop`.
 
-### Pre-built Binaries
-
-- Pre-built binaries to be added to releases soon. In the meantime, please build from source using Cargo.
+Pre-built binaries to be added in the future. In the meantime, please build from source using Cargo.
 
 ## Dependencies
 
@@ -67,11 +56,15 @@ Currently, only NVIDIA GPUs are supported, but support for different GPUs is in 
 
 Once installed, run `mltop` in your terminal. The tool will run until you press `q` to quit.
 
+## Customization
+
+Customization is done via `~/.config/mltop/config.toml`. For theme customization, see [Theme Customization](docs/theme.md).
+
 ## Roadmap
 
+- Pre-built binaries
 - Support for multiple GPUs
 - Support for other GPU vendors (AMD, Intel, etc.)
-- Interactive customization of UI/UX
 
 ## Contributing
 

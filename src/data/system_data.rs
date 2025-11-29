@@ -1,29 +1,21 @@
-use self::cpu::CpuSnapshot;
-use self::gpu::GpuSnapshot;
-use self::memory::MemorySnapshot;
-use self::processes::ProcessesSnapshot;
-use self::snapshot::DataSnapshot;
-
-pub mod cpu;
-pub mod gpu;
-pub mod memory;
-pub mod processes;
-pub mod snapshot;
-pub mod store;
-pub mod update_kind;
+use super::cpu::CpuSnapshot;
+use super::gpu::GpuSnapshot;
+use super::memory::MemorySnapshot;
+use super::processes::ProcessesSnapshot;
+use super::snapshot::DataSnapshot;
 
 /// The main data struct used by the widgets to render information.
 /// It is meant to be updated in-place by passing instances of DataSnapshot.
-pub struct Data {
+pub struct SystemData {
     pub cpu: CpuSnapshot,
     pub memory: MemorySnapshot,
     pub gpu: Option<GpuSnapshot>,
     pub processes: ProcessesSnapshot,
 }
 
-impl Data {
-    pub fn new_from_snapshot(snapshot: DataSnapshot) -> Data {
-        Data {
+impl SystemData {
+    pub fn new_from_snapshot(snapshot: DataSnapshot) -> SystemData {
+        SystemData {
             cpu: snapshot.cpu.expect("First snapshot must have cpu"),
             memory: snapshot.memory.expect("First snapshot must have memory"),
             gpu: snapshot.gpu,
