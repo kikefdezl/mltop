@@ -15,6 +15,10 @@ List of all configurable elements (see `src/config/theme.rs`):
 `line_graph_mem`
 `line_graph_gpu_use`
 `line_graph_gpu_mem`
+`bar_low_use`
+`bar_medium_use`
+`bar_medium_high_use`
+`bar_high_use`
 `processes_header_fg`
 `processes_header_bg`
 `processes_cpu`
