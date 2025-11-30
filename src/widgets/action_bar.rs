@@ -2,10 +2,12 @@ use ratatui::widgets::Widget;
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Rect},
-    style::{Color, Style},
+    style::Style,
     text::{Line, Span},
     widgets::{Block, Paragraph},
 };
+
+use crate::config::get_config;
 
 const FOOTER: [(&str, &str); 4] = [
     ("F4", "Filter"),
@@ -13,8 +15,6 @@ const FOOTER: [(&str, &str); 4] = [
     ("F6", "SortBy"),
     ("F9", "Kill"),
 ];
-const HIGHLIGHT_STYLE: Style = Style::new().bg(Color::White).fg(Color::Black);
-const MESSAGE_STYLE: Style = Style::new().bg(Color::Red).fg(Color::Black);
 
 pub struct ActionBarWidget<'a> {
     pub message: Option<&'a str>,
@@ -23,12 +23,21 @@ pub struct ActionBarWidget<'a> {
 
 impl<'a> Widget for ActionBarWidget<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        let theme = &get_config().theme;
+
+        let key_style: Style = Style::new()
+            .bg(theme.action_bar_key_bg)
+            .fg(theme.action_bar_key_fg);
+        let cmd_style: Style = Style::new()
+            .bg(theme.action_bar_cmd_bg)
+            .fg(theme.action_bar_cmd_fg);
+
         let mut spans: Vec<Span> = FOOTER
             .iter()
             .flat_map(|f| {
                 vec![
-                    Span::raw(format!(" {}", f.0)),
-                    Span::styled(f.1, HIGHLIGHT_STYLE),
+                    Span::styled(format!(" {}", f.0), key_style),
+                    Span::styled(f.1, cmd_style),
                 ]
             })
             .collect();
@@ -46,12 +55,14 @@ impl<'a> Widget for ActionBarWidget<'a> {
             .width
             .saturating_sub(used_width as u16)
             .saturating_sub(message_width as u16);
-        spans.push(Span::styled(
-            " ".repeat(fill_width as usize),
-            HIGHLIGHT_STYLE,
-        ));
+        spans.push(Span::styled(" ".repeat(fill_width as usize), cmd_style));
         if let Some(m) = self.message {
-            spans.push(Span::styled(format!(" {} ", m), MESSAGE_STYLE));
+            spans.push(Span::styled(
+                format!(" {} ", m),
+                Style::new()
+                    .bg(theme.action_bar_msg_bg)
+                    .fg(theme.action_bar_msg_fg),
+            ));
         }
 
         Paragraph::new(Line::from(spans))
