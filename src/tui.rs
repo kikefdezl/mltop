@@ -14,7 +14,7 @@ use ratatui::{
     Terminal,
 };
 
-use crate::config::REFRESH_RATE_MILLIS;
+use crate::config::{get_config, Config, REFRESH_RATE_MILLIS};
 use crate::data::store::{DataStore, StoredSnapshot};
 use crate::data::system_data::SystemData;
 use crate::data::update_kind::DataUpdateKind;
@@ -31,6 +31,7 @@ use crate::widgets::memory::MEMORY_WIDGET_HEIGHT;
 use crate::widgets::process_table::ProcessTableWidget;
 
 pub struct Tui<S: SystemMonitor, B: Backend> {
+    config: &'static Config,
     system: S,
     data: SystemData,
     data_store: DataStore,
@@ -59,6 +60,7 @@ impl Default for Tui<RealSystem, CrosstermBackend<Stdout>> {
         }
 
         Tui {
+            config: get_config(),
             system,
             data,
             data_store: DataStore::new(),
@@ -191,6 +193,10 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
             let line_graph = LineGraphWidget {
                 data: &self.data_store,
                 max_gpu_mem: self.data.gpu.as_ref().map(|g| g.max_memory),
+                color_cpu: &self.config.theme.line_graph_cpu,
+                color_mem: &self.config.theme.line_graph_mem,
+                color_gpu_use: &self.config.theme.line_graph_gpu_use,
+                color_gpu_mem: &self.config.theme.line_graph_gpu_mem,
             };
             let gpu = self.data.gpu.as_ref().map(|gd| GpuWidget { data: gd });
             let filter_by = match self.state.mode {
@@ -200,10 +206,23 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
             let process_table = ProcessTableWidget {
                 data: &self.data.processes,
                 filter_by,
+                color_header_fg: &self.config.theme.processes_header_fg,
+                color_header_bg: &self.config.theme.processes_header_bg,
+                color_cpu: &self.config.theme.processes_cpu,
+                color_thread: &self.config.theme.processes_thread,
+                color_gpu_graphic: &self.config.theme.processes_gpu_graphic,
+                color_gpu_compute: &self.config.theme.processes_gpu_compute,
+                color_bin_name: &self.config.theme.processes_bin_name,
             };
             let action_bar = ActionBarWidget {
                 message: self.message_bus.read(),
                 filter_by,
+                color_key_bg: &self.config.theme.action_bar_key_bg,
+                color_key_fg: &self.config.theme.action_bar_key_fg,
+                color_cmd_bg: &self.config.theme.action_bar_cmd_bg,
+                color_cmd_fg: &self.config.theme.action_bar_cmd_fg,
+                color_msg_bg: &self.config.theme.action_bar_msg_bg,
+                color_msg_fg: &self.config.theme.action_bar_msg_fg,
             };
 
             // -- build layout --
@@ -216,12 +235,10 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
                 constraints.push(Constraint::Length(GPU_WIDGET_HEIGHT));
             }
             constraints.push(Constraint::Min(0));
-
             let areas = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints(constraints)
                 .split(frame.area());
-
             // take the remaining area and split it for the table of
             // processes and the action bar.
             // They are only rendered if there's enough vertical space
@@ -297,9 +314,18 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
             _ => None,
         };
         if let Some(selected_row) = self.state.selected_row() {
+            // TODO: Shouldn't have to build the full widget to do this op, should decouple
+            // the process ordering/filtering from displaying.
             let table = ProcessTableWidget {
                 data: &self.data.processes,
                 filter_by,
+                color_header_fg: &self.config.theme.processes_header_fg,
+                color_header_bg: &self.config.theme.processes_header_bg,
+                color_cpu: &self.config.theme.processes_cpu,
+                color_thread: &self.config.theme.processes_thread,
+                color_gpu_graphic: &self.config.theme.processes_gpu_graphic,
+                color_gpu_compute: &self.config.theme.processes_gpu_compute,
+                color_bin_name: &self.config.theme.processes_bin_name,
             };
             if let Some(pid) = table.get_nth_pid(selected_row, &mut self.state.process_table) {
                 self.system.kill_process(pid as usize);
@@ -337,6 +363,7 @@ impl Tui<FakeSystem, TestBackend> {
         }
 
         Tui {
+            config: get_config(),
             system,
             data,
             data_store: DataStore::new(),

@@ -29,6 +29,10 @@ impl<'a> CpuWidget<'a> {
         }
         (cpu_rows, cpu_cols)
     }
+
+    pub fn grid_height(&self) -> u16 {
+        self.grid_dimensions().0
+    }
 }
 
 impl<'a> Widget for CpuWidget<'a> {

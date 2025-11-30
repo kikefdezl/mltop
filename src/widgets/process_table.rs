@@ -1,4 +1,3 @@
-use crate::config::get_config;
 use crate::constants::BYTES_PER_MB;
 use crate::data::processes::{Process, ProcessType, ProcessesSnapshot};
 use crate::widgets::state::process_table::{ProcessTableState, ProcessesSortBy};
@@ -23,6 +22,14 @@ const CONSTRAINTS: [Constraint; 6] = [
 pub struct ProcessTableWidget<'a> {
     pub data: &'a ProcessesSnapshot,
     pub filter_by: Option<&'a str>,
+
+    pub color_header_fg: &'static Color,
+    pub color_header_bg: &'static Color,
+    pub color_cpu: &'static Color,
+    pub color_thread: &'static Color,
+    pub color_gpu_graphic: &'static Color,
+    pub color_gpu_compute: &'static Color,
+    pub color_bin_name: &'static Color,
 }
 
 impl<'a> StatefulWidget for ProcessTableWidget<'a> {
@@ -35,7 +42,7 @@ impl<'a> StatefulWidget for ProcessTableWidget<'a> {
 
         let rows: Vec<Row> = processes
             .into_iter()
-            .map(|d| Self::create_row(d, self.filter_by))
+            .map(|d| self.create_row(d, self.filter_by))
             .collect();
 
         Table::new(rows, CONSTRAINTS)
@@ -47,10 +54,9 @@ impl<'a> StatefulWidget for ProcessTableWidget<'a> {
 
 impl<'a> ProcessTableWidget<'a> {
     fn create_header(&self, state: &ProcessTableState) -> Row<'static> {
-        let theme = &get_config().theme;
         let header_style = Style::default()
-            .fg(theme.processes_header_fg)
-            .bg(theme.processes_header_bg);
+            .fg(*self.color_header_fg)
+            .bg(*self.color_header_bg);
         let (cpu, mem) = match &state.sort_by {
             ProcessesSortBy::CPU => ("▽CPU%", "  MEM%"),
             ProcessesSortBy::MEM => (" CPU%", " ▽MEM%"),
@@ -64,14 +70,13 @@ impl<'a> ProcessTableWidget<'a> {
             .height(1)
     }
 
-    fn create_row<'b>(data: Process, filter_by: Option<&'b str>) -> Row<'b> {
-        let theme = &get_config().theme;
+    fn create_row(&self, data: Process, filter_by: Option<&'a str>) -> Row<'_> {
         let color = match data.type_ {
-            ProcessType::GpuGraphic => theme.processes_gpu_graphic,
-            ProcessType::GpuCompute => theme.processes_gpu_compute,
-            ProcessType::UserThread => theme.processes_thread,
-            ProcessType::KernelThread => theme.processes_thread,
-            _ => theme.processes_cpu,
+            ProcessType::GpuGraphic => *self.color_gpu_graphic,
+            ProcessType::GpuCompute => *self.color_gpu_compute,
+            ProcessType::UserThread => *self.color_thread,
+            ProcessType::KernelThread => *self.color_thread,
+            _ => *self.color_cpu,
         };
 
         let cpu_text_color = if data.cpu_usage < 0.05 {
@@ -118,7 +123,7 @@ impl<'a> ProcessTableWidget<'a> {
                 ])
                 .alignment(Alignment::Right),
             ),
-            Self::create_cmd_cell(data.command, color, filter_by),
+            self.create_cmd_cell(data.command, color, filter_by),
         ])
         .style(Style::default().fg(color))
     }
@@ -126,7 +131,7 @@ impl<'a> ProcessTableWidget<'a> {
     // creates a Cell with the process command:
     // - highlights the `bin` part of the command with Magenta text
     // - highlights the `filter_by` matching string with a green background
-    fn create_cmd_cell(cmd: String, color: Color, filter_by: Option<&str>) -> Cell<'_> {
+    fn create_cmd_cell(&self, cmd: String, color: Color, filter_by: Option<&str>) -> Cell<'_> {
         let bin_start = cmd.rfind('/').map(|i| i + 1).unwrap_or(0);
         let bin_end = cmd.find(' ').unwrap_or(cmd.len());
 
@@ -152,9 +157,7 @@ impl<'a> ProcessTableWidget<'a> {
 
                 // Apply magenta/bold for bin section
                 if s < bin_end && e > bin_start {
-                    style = style
-                        .fg(get_config().theme.processes_bin_name)
-                        .add_modifier(Modifier::BOLD);
+                    style = style.fg(*self.color_bin_name).add_modifier(Modifier::BOLD);
                 }
 
                 // Apply green background for filter match
