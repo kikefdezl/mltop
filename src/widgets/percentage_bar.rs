@@ -40,13 +40,15 @@ pub fn percentage_bar<'a>(width: u16, perc: f32, text: &str) -> Vec<Span<'a>> {
         .to_string();
     spans.push(Span::styled(colored_text, Style::default().fg(color)));
 
-    let grey_text = text
+    let rest_text = text
         .get(colored_text_width as usize..)
         .unwrap_or("")
         .to_string();
     spans.push(Span::styled(
-        grey_text,
-        Style::default().fg(Color::DarkGray),
+        rest_text,
+        Style::default()
+            .fg(get_config().theme.bar_text)
+            .add_modifier(Modifier::DIM),
     ));
 
     spans.push(Span::styled("]".to_string(), BRACKET_STYLE));

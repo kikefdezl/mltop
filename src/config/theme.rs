@@ -13,6 +13,7 @@ pub struct Theme {
     pub bar_medium_use: Color,
     pub bar_medium_high_use: Color,
     pub bar_high_use: Color,
+    pub bar_text: Color,
 
     pub processes_header_fg: Color,
     pub processes_header_bg: Color,
@@ -21,6 +22,13 @@ pub struct Theme {
     pub processes_gpu_compute: Color,
     pub processes_gpu_graphic: Color,
     pub processes_bin_name: Color,
+
+    pub action_bar_msg_bg: Color,
+    pub action_bar_msg_fg: Color,
+    pub action_bar_cmd_bg: Color,
+    pub action_bar_cmd_fg: Color,
+    pub action_bar_key_bg: Color,
+    pub action_bar_key_fg: Color,
 }
 
 impl Default for Theme {
@@ -35,6 +43,7 @@ impl Default for Theme {
             bar_medium_use: Color::Yellow,
             bar_medium_high_use: Color::Rgb(255, 130, 0), // orange
             bar_high_use: Color::Red,
+            bar_text: Color::DarkGray,
 
             processes_header_fg: Color::Black,
             processes_header_bg: Color::White,
@@ -43,6 +52,13 @@ impl Default for Theme {
             processes_gpu_compute: Color::Magenta,
             processes_gpu_graphic: Color::Yellow,
             processes_bin_name: Color::Magenta,
+
+            action_bar_msg_bg: Color::Red,
+            action_bar_msg_fg: Color::Black,
+            action_bar_cmd_bg: Color::White,
+            action_bar_cmd_fg: Color::Black,
+            action_bar_key_bg: Color::Reset,
+            action_bar_key_fg: Color::White,
         }
     }
 }

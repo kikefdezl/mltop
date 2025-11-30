@@ -26,3 +26,9 @@ List of all configurable elements (see `src/config/theme.rs`):
 `processes_gpu_compute`
 `processes_gpu_graphic`
 `processes_bin_name`
+`action_bar_msg_bg`
+`action_bar_msg_fg`
+`action_bar_cmd_bg`
+`action_bar_cmd_fg`
+`action_bar_key_bg`
+`action_bar_key_fg`
