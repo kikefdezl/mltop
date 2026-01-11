@@ -5,7 +5,7 @@ use ratatui::widgets::StatefulWidget;
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Rect},
-    style::{Color, Modifier, Style, Stylize},
+    style::{Color, Modifier, Style},
     text::{Line, Span, Text},
     widgets::{Cell, Row, Table},
 };
@@ -30,6 +30,8 @@ pub struct ProcessTableWidget<'a> {
     pub color_gpu_graphic: &'static Color,
     pub color_gpu_compute: &'static Color,
     pub color_bin_name: &'static Color,
+    pub color_selected_fg: &'static Color,
+    pub color_selected_bg: &'static Color,
 }
 
 impl<'a> StatefulWidget for ProcessTableWidget<'a> {
@@ -47,7 +49,11 @@ impl<'a> StatefulWidget for ProcessTableWidget<'a> {
 
         Table::new(rows, CONSTRAINTS)
             .header(header)
-            .row_highlight_style(Style::new().reversed())
+            .row_highlight_style(
+                Style::new()
+                    .fg(*self.color_selected_fg)
+                    .bg(*self.color_selected_bg),
+            )
             .render(area, buf, &mut state.ratatui_table_state);
     }
 }

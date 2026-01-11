@@ -213,6 +213,8 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
                 color_gpu_graphic: &self.config.theme.processes_gpu_graphic,
                 color_gpu_compute: &self.config.theme.processes_gpu_compute,
                 color_bin_name: &self.config.theme.processes_bin_name,
+                color_selected_fg: &self.config.theme.processes_selected_fg,
+                color_selected_bg: &self.config.theme.processes_selected_bg,
             };
             let action_bar = ActionBarWidget {
                 message: self.message_bus.read(),
@@ -326,6 +328,8 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
                 color_gpu_graphic: &self.config.theme.processes_gpu_graphic,
                 color_gpu_compute: &self.config.theme.processes_gpu_compute,
                 color_bin_name: &self.config.theme.processes_bin_name,
+                color_selected_fg: &self.config.theme.processes_selected_fg,
+                color_selected_bg: &self.config.theme.processes_selected_bg,
             };
             if let Some(pid) = table.get_nth_pid(selected_row, &mut self.state.process_table) {
                 self.system.kill_process(pid as usize);
