@@ -1,6 +1,7 @@
 # Theme Customization
 
-In `~/.config/mltop/config.toml`, use the `[theme]` section to tweak your palette. You can use Ratatui color names or hex values. Examples:
+In `~/.config/mltop/config.toml`, use the `[theme]` section to tweak your
+palette. You can use Ratatui color names or hex values. Examples:
 
 ```toml
 [theme]
@@ -26,6 +27,8 @@ List of all configurable elements (see `src/config/theme.rs`):
 `processes_gpu_compute`
 `processes_gpu_graphic`
 `processes_bin_name`
+`processes_selected_fg`
+`processes_selected_bg`
 `action_bar_msg_bg`
 `action_bar_msg_fg`
 `action_bar_cmd_bg`
