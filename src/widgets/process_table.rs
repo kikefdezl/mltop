@@ -1,3 +1,4 @@
+use crate::config::Theme;
 use crate::constants::BYTES_PER_MB;
 use crate::data::processes::{Process, ProcessType, ProcessesSnapshot};
 use crate::widgets::state::process_table::{ProcessTableState, ProcessesSortBy};
@@ -22,16 +23,7 @@ const CONSTRAINTS: [Constraint; 6] = [
 pub struct ProcessTableWidget<'a> {
     pub data: &'a ProcessesSnapshot,
     pub filter_by: Option<&'a str>,
-
-    pub color_header_fg: &'static Color,
-    pub color_header_bg: &'static Color,
-    pub color_cpu: &'static Color,
-    pub color_thread: &'static Color,
-    pub color_gpu_graphic: &'static Color,
-    pub color_gpu_compute: &'static Color,
-    pub color_bin_name: &'static Color,
-    pub color_selected_fg: &'static Color,
-    pub color_selected_bg: &'static Color,
+    pub theme: &'a Theme,
 }
 
 impl<'a> StatefulWidget for ProcessTableWidget<'a> {
@@ -43,7 +35,7 @@ impl<'a> StatefulWidget for ProcessTableWidget<'a> {
         let processes = self.get_processes(state);
 
         let rows: Vec<Row> = processes
-            .into_iter()
+            .iter()
             .map(|d| self.create_row(d, self.filter_by))
             .collect();
 
@@ -51,8 +43,8 @@ impl<'a> StatefulWidget for ProcessTableWidget<'a> {
             .header(header)
             .row_highlight_style(
                 Style::new()
-                    .fg(*self.color_selected_fg)
-                    .bg(*self.color_selected_bg),
+                    .fg(self.theme.processes_selected_fg)
+                    .bg(self.theme.processes_selected_bg),
             )
             .render(area, buf, &mut state.ratatui_table_state);
     }
@@ -61,8 +53,8 @@ impl<'a> StatefulWidget for ProcessTableWidget<'a> {
 impl<'a> ProcessTableWidget<'a> {
     fn create_header(&self, state: &ProcessTableState) -> Row<'static> {
         let header_style = Style::default()
-            .fg(*self.color_header_fg)
-            .bg(*self.color_header_bg);
+            .fg(self.theme.processes_header_fg)
+            .bg(self.theme.processes_header_bg);
         let (cpu, mem) = match &state.sort_by {
             ProcessesSortBy::CPU => ("▽CPU%", "  MEM%"),
             ProcessesSortBy::MEM => (" CPU%", " ▽MEM%"),
@@ -76,13 +68,13 @@ impl<'a> ProcessTableWidget<'a> {
             .height(1)
     }
 
-    fn create_row(&self, data: Process, filter_by: Option<&'a str>) -> Row<'_> {
+    fn create_row(&self, data: &Process, filter_by: Option<&'a str>) -> Row<'_> {
         let color = match data.type_ {
-            ProcessType::GpuGraphic => *self.color_gpu_graphic,
-            ProcessType::GpuCompute => *self.color_gpu_compute,
-            ProcessType::UserThread => *self.color_thread,
-            ProcessType::KernelThread => *self.color_thread,
-            _ => *self.color_cpu,
+            ProcessType::GpuGraphic => self.theme.processes_gpu_graphic,
+            ProcessType::GpuCompute => self.theme.processes_gpu_compute,
+            ProcessType::UserThread => self.theme.processes_thread,
+            ProcessType::KernelThread => self.theme.processes_thread,
+            _ => self.theme.processes_cpu,
         };
 
         let cpu_text_color = if data.cpu_usage < 0.05 {
@@ -129,7 +121,7 @@ impl<'a> ProcessTableWidget<'a> {
                 ])
                 .alignment(Alignment::Right),
             ),
-            self.create_cmd_cell(data.command, color, filter_by),
+            self.create_cmd_cell(&data.command, color, filter_by),
         ])
         .style(Style::default().fg(color))
     }
@@ -137,7 +129,7 @@ impl<'a> ProcessTableWidget<'a> {
     // creates a Cell with the process command:
     // - highlights the `bin` part of the command with Magenta text
     // - highlights the `filter_by` matching string with a green background
-    fn create_cmd_cell(&self, cmd: String, color: Color, filter_by: Option<&str>) -> Cell<'_> {
+    fn create_cmd_cell(&self, cmd: &str, color: Color, filter_by: Option<&str>) -> Cell<'_> {
         let bin_start = cmd.rfind('/').map(|i| i + 1).unwrap_or(0);
         let bin_end = cmd.find(' ').unwrap_or(cmd.len());
 
@@ -163,7 +155,9 @@ impl<'a> ProcessTableWidget<'a> {
 
                 // Apply magenta/bold for bin section
                 if s < bin_end && e > bin_start {
-                    style = style.fg(*self.color_bin_name).add_modifier(Modifier::BOLD);
+                    style = style
+                        .fg(self.theme.processes_bin_name)
+                        .add_modifier(Modifier::BOLD);
                 }
 
                 // Apply green background for filter match
@@ -179,23 +173,24 @@ impl<'a> ProcessTableWidget<'a> {
     }
 
     pub fn get_processes(&'a self, state: &mut ProcessTableState) -> Vec<Process> {
-        let mut processes = Self::filter_processes(self.data.processes.clone(), self.filter_by);
-        processes = Self::sort_processes(processes, &state.sort_by);
-        processes = Self::filter_threads(processes, state.show_threads);
+        let mut processes = Self::filter_processes(&self.data.processes, self.filter_by);
+        Self::sort_processes(&mut processes, &state.sort_by);
+        Self::filter_threads(&mut processes, state.show_threads);
         processes
     }
 
-    pub fn filter_processes(processes: Vec<Process>, filter_by: Option<&str>) -> Vec<Process> {
+    pub fn filter_processes(processes: &[Process], filter_by: Option<&str>) -> Vec<Process> {
         match filter_by {
             Some(s) => processes
-                .into_iter()
+                .iter()
                 .filter(|p| p.command.contains(s))
+                .cloned()
                 .collect(),
-            None => processes,
+            None => processes.to_vec(),
         }
     }
 
-    pub fn sort_processes(mut processes: Vec<Process>, sort_by: &ProcessesSortBy) -> Vec<Process> {
+    pub fn sort_processes(processes: &mut [Process], sort_by: &ProcessesSortBy) {
         match sort_by {
             ProcessesSortBy::CPU => {
                 processes.sort_by(|a, b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap())
@@ -204,17 +199,11 @@ impl<'a> ProcessTableWidget<'a> {
                 processes.sort_by(|a, b| b.memory_usage.partial_cmp(&a.memory_usage).unwrap())
             }
         };
-        processes
     }
 
-    pub fn filter_threads(processes: Vec<Process>, show_threads: bool) -> Vec<Process> {
-        if show_threads {
-            processes
-        } else {
-            processes
-                .into_iter()
-                .filter(|p| !p.is_thread())
-                .collect::<Vec<Process>>()
+    pub fn filter_threads(processes: &mut Vec<Process>, show_threads: bool) {
+        if !show_threads {
+            processes.retain(|p| !p.is_thread());
         }
     }
 
