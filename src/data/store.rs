@@ -1,4 +1,5 @@
 use super::snapshot::DataSnapshot;
+use crate::config::MAX_STORED_SNAPSHOTS;
 
 // Structure for storing only what we need to track
 pub struct StoredSnapshot {
@@ -10,7 +11,7 @@ pub struct StoredSnapshot {
 }
 
 impl StoredSnapshot {
-    pub fn from_data_snapshot(snapshot: DataSnapshot) -> StoredSnapshot {
+    pub fn from_data_snapshot(snapshot: &DataSnapshot) -> StoredSnapshot {
         let (gpu_use, gpu_mem_use) = snapshot
             .gpu
             .as_ref()
@@ -18,8 +19,8 @@ impl StoredSnapshot {
             .unzip();
 
         StoredSnapshot {
-            cpu_use: snapshot.cpu.unwrap().usage,
-            mem_use: snapshot.memory.unwrap().total_percent(),
+            cpu_use: snapshot.cpu.as_ref().unwrap().usage,
+            mem_use: snapshot.memory.as_ref().unwrap().total_percent(),
             gpu_use,
             gpu_mem_use,
         }
@@ -38,5 +39,8 @@ impl DataStore {
 
     pub fn save(&mut self, snapshot: StoredSnapshot) {
         self.snapshots.push(snapshot);
+        if self.snapshots.len() > MAX_STORED_SNAPSHOTS {
+            self.snapshots.remove(0);
+        }
     }
 }

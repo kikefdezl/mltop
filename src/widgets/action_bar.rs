@@ -1,8 +1,9 @@
+use crate::config::Theme;
 use ratatui::widgets::Widget;
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Rect},
-    style::{Color, Style},
+    style::Style,
     text::{Line, Span},
     widgets::{Block, Paragraph},
 };
@@ -17,19 +18,17 @@ const FOOTER: [(&str, &str); 4] = [
 pub struct ActionBarWidget<'a> {
     pub message: Option<&'a str>,
     pub filter_by: Option<&'a str>,
-
-    pub color_key_bg: &'static Color,
-    pub color_key_fg: &'static Color,
-    pub color_cmd_bg: &'static Color,
-    pub color_cmd_fg: &'static Color,
-    pub color_msg_bg: &'static Color,
-    pub color_msg_fg: &'static Color,
+    pub theme: &'a Theme,
 }
 
 impl<'a> Widget for ActionBarWidget<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let key_style: Style = Style::new().bg(*self.color_key_bg).fg(*self.color_key_fg);
-        let cmd_style: Style = Style::new().bg(*self.color_cmd_bg).fg(*self.color_cmd_fg);
+        let key_style: Style = Style::new()
+            .bg(self.theme.action_bar_key_bg)
+            .fg(self.theme.action_bar_key_fg);
+        let cmd_style: Style = Style::new()
+            .bg(self.theme.action_bar_cmd_bg)
+            .fg(self.theme.action_bar_cmd_fg);
 
         let mut spans: Vec<Span> = FOOTER
             .iter()
@@ -58,7 +57,9 @@ impl<'a> Widget for ActionBarWidget<'a> {
         if let Some(m) = self.message {
             spans.push(Span::styled(
                 format!(" {} ", m),
-                Style::new().bg(*self.color_msg_bg).fg(*self.color_msg_fg),
+                Style::new()
+                    .bg(self.theme.action_bar_msg_bg)
+                    .fg(self.theme.action_bar_msg_fg),
             ));
         }
 

@@ -183,6 +183,8 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
 
     pub fn render(&mut self) {
         let _ = self.terminal.draw(|frame| {
+            let theme = &self.config.theme;
+
             // -- build widgets --
             let cpu = CpuWidget {
                 data: &self.data.cpu,
@@ -193,10 +195,7 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
             let line_graph = LineGraphWidget {
                 data: &self.data_store,
                 max_gpu_mem: self.data.gpu.as_ref().map(|g| g.max_memory),
-                color_cpu: &self.config.theme.line_graph_cpu,
-                color_mem: &self.config.theme.line_graph_mem,
-                color_gpu_use: &self.config.theme.line_graph_gpu_use,
-                color_gpu_mem: &self.config.theme.line_graph_gpu_mem,
+                theme,
             };
             let gpu = self.data.gpu.as_ref().map(|gd| GpuWidget { data: gd });
             let filter_by = match self.state.mode {
@@ -206,25 +205,12 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
             let process_table = ProcessTableWidget {
                 data: &self.data.processes,
                 filter_by,
-                color_header_fg: &self.config.theme.processes_header_fg,
-                color_header_bg: &self.config.theme.processes_header_bg,
-                color_cpu: &self.config.theme.processes_cpu,
-                color_thread: &self.config.theme.processes_thread,
-                color_gpu_graphic: &self.config.theme.processes_gpu_graphic,
-                color_gpu_compute: &self.config.theme.processes_gpu_compute,
-                color_bin_name: &self.config.theme.processes_bin_name,
-                color_selected_fg: &self.config.theme.processes_selected_fg,
-                color_selected_bg: &self.config.theme.processes_selected_bg,
+                theme,
             };
             let action_bar = ActionBarWidget {
                 message: self.message_bus.read(),
                 filter_by,
-                color_key_bg: &self.config.theme.action_bar_key_bg,
-                color_key_fg: &self.config.theme.action_bar_key_fg,
-                color_cmd_bg: &self.config.theme.action_bar_cmd_bg,
-                color_cmd_fg: &self.config.theme.action_bar_cmd_fg,
-                color_msg_bg: &self.config.theme.action_bar_msg_bg,
-                color_msg_fg: &self.config.theme.action_bar_msg_fg,
+                theme,
             };
 
             // -- build layout --
@@ -321,15 +307,7 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
             let table = ProcessTableWidget {
                 data: &self.data.processes,
                 filter_by,
-                color_header_fg: &self.config.theme.processes_header_fg,
-                color_header_bg: &self.config.theme.processes_header_bg,
-                color_cpu: &self.config.theme.processes_cpu,
-                color_thread: &self.config.theme.processes_thread,
-                color_gpu_graphic: &self.config.theme.processes_gpu_graphic,
-                color_gpu_compute: &self.config.theme.processes_gpu_compute,
-                color_bin_name: &self.config.theme.processes_bin_name,
-                color_selected_fg: &self.config.theme.processes_selected_fg,
-                color_selected_bg: &self.config.theme.processes_selected_bg,
+                theme: &self.config.theme,
             };
             if let Some(pid) = table.get_nth_pid(selected_row, &mut self.state.process_table) {
                 self.system.kill_process(pid as usize);
@@ -349,7 +327,7 @@ impl<S: SystemMonitor, B: Backend> Tui<S, B> {
         };
 
         let data_snapshot = self.system.collect_snapshot(&update_kind);
-        let stored = StoredSnapshot::from_data_snapshot(data_snapshot.clone());
+        let stored = StoredSnapshot::from_data_snapshot(&data_snapshot);
         self.data_store.save(stored);
         self.data.update_from_snapshot(data_snapshot);
     }

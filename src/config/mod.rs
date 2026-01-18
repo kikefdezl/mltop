@@ -1,14 +1,15 @@
-use self::theme::Theme;
 use serde::Deserialize;
-
 use std::env::home_dir;
 use std::fs::read_to_string;
 use std::sync::OnceLock;
 
 pub mod theme;
 
+pub use theme::Theme;
+
 pub const REFRESH_RATE_MILLIS: u64 = 1000;
 pub const GRAPH_X_AXIS_WINDOW_IN_SECONDS: usize = 120;
+pub const MAX_STORED_SNAPSHOTS: usize = 300;
 pub const MESSAGE_EXPIRATION_IN_SECONDS: u64 = 10;
 
 const DEFAULT_CONFIG_FILE: &str = ".config/mltop/config.toml";

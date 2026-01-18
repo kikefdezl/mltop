@@ -1,3 +1,4 @@
+use crate::config::Theme;
 use crate::config::GRAPH_X_AXIS_WINDOW_IN_SECONDS;
 use crate::data::store::{DataStore, StoredSnapshot};
 use ratatui::layout::Constraint;
@@ -13,11 +14,7 @@ use ratatui::{
 pub struct LineGraphWidget<'a> {
     pub data: &'a DataStore,
     pub max_gpu_mem: Option<u64>,
-
-    pub color_cpu: &'static Color,
-    pub color_mem: &'static Color,
-    pub color_gpu_use: &'static Color,
-    pub color_gpu_mem: &'static Color,
+    pub theme: &'a Theme,
 }
 
 impl<'a> Widget for LineGraphWidget<'a> {
@@ -45,7 +42,7 @@ impl<'a> Widget for LineGraphWidget<'a> {
                 Dataset::default()
                     .name("GPU %")
                     .marker(symbols::Marker::Braille)
-                    .style(Style::default().fg(*self.color_gpu_use))
+                    .style(Style::default().fg(self.theme.line_graph_gpu_use))
                     .graph_type(GraphType::Line)
                     .data(&gpu_use_data),
             );
@@ -68,7 +65,7 @@ impl<'a> Widget for LineGraphWidget<'a> {
                 Dataset::default()
                     .name("GPU MEM%")
                     .marker(symbols::Marker::Braille)
-                    .style(Style::default().fg(*self.color_gpu_mem))
+                    .style(Style::default().fg(self.theme.line_graph_gpu_mem))
                     .graph_type(GraphType::Line)
                     .data(&gpu_mem_data),
             );
@@ -84,7 +81,7 @@ impl<'a> Widget for LineGraphWidget<'a> {
             Dataset::default()
                 .name("CPU %")
                 .marker(symbols::Marker::Braille)
-                .style(Style::default().fg(*self.color_cpu))
+                .style(Style::default().fg(self.theme.line_graph_cpu))
                 .graph_type(GraphType::Line)
                 .data(&cpu_data),
         );
@@ -99,7 +96,7 @@ impl<'a> Widget for LineGraphWidget<'a> {
             Dataset::default()
                 .name("MEM %")
                 .marker(symbols::Marker::Braille)
-                .style(Style::default().fg(*self.color_mem))
+                .style(Style::default().fg(self.theme.line_graph_mem))
                 .graph_type(GraphType::Line)
                 .data(&mem_data),
         );
