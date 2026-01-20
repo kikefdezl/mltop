@@ -3,8 +3,6 @@ use ratatui::{
     text::Span,
 };
 
-use ratatui::prelude::*;
-
 use crate::config::get_config;
 
 const BRACKET_STYLE: Style = Style::new().add_modifier(Modifier::BOLD);
