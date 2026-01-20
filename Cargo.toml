@@ -10,13 +10,13 @@ repository = "https://github.com/kikefdezl/mltop"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29.0"
 itertools = "0.14.0"
-nvml-wrapper = "0.10.0"
+nvml-wrapper = "0.11.0"
 ratatui = { version = "0.30.0", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
-sysinfo = { version = "0.30.12", default-features = false }
-toml = "0.9.8"
+sysinfo = { version = "0.30.7", default-features = false }
+toml = "0.9.11"
 
 [profile.release]
 codegen-units = 1
