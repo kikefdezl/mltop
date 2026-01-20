@@ -87,7 +87,7 @@ impl ProcessesSnapshot {
                         },
                         command: cmd_list
                             .iter()
-                            .map(|s| s.to_string())
+                            .filter_map(|s| s.to_str())
                             .collect::<Vec<_>>()
                             .join(" "),
                         memory,

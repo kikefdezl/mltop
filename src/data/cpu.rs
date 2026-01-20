@@ -36,7 +36,7 @@ impl CpuSnapshot {
         for cpu in sys.cpus() {
             let id: usize = cpu.name()[3..].parse().unwrap();
             let usage: f32 = cpu.cpu_usage();
-            let temperature: f32 = match temperatures.get(&id) {
+            let temperature: f32 = match temperatures.get(&id).unwrap_or(&None) {
                 Some(t) => *t,
                 None => 0.0,
             };
@@ -47,7 +47,7 @@ impl CpuSnapshot {
             cores.push(core);
         }
 
-        let usage = sys.global_cpu_info().cpu_usage();
+        let usage = sys.global_cpu_usage();
         CpuSnapshot { usage, cores }
     }
 }
