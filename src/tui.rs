@@ -75,7 +75,11 @@ impl Default for Tui<RealSystem, CrosstermBackend<Stdout>> {
 
 impl<S: SystemMonitor, B: Backend> Tui<S, B> {
     pub fn run(&mut self) -> io::Result<()> {
+        // render -> update -> render to make the startup feel faster
         self.render();
+        self.update_data();
+        self.render();
+
         let (tx, rx) = mpsc::channel();
 
         Self::spawn_crossterm_event_thread(tx.clone(), 300)?;
