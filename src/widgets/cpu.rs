@@ -50,8 +50,12 @@ impl<'a> Widget for CpuWidget<'a> {
 
         let mut lines = vec![Line::from(spans).left_aligned()];
 
-        let total_width = area.width - 6;
-        let core_width: u16 = total_width / cpu_cols;
+        let total_width = area.width.saturating_sub(10);
+        let core_width: u16 = if cpu_cols > 0 {
+            total_width / cpu_cols
+        } else {
+            0
+        };
 
         for r in 0..cpu_rows {
             let mut spans = vec![Span::raw("    ")];
@@ -78,7 +82,12 @@ impl<'a> Widget for CpuWidget<'a> {
                 ));
 
                 // bar
-                let width = widths[c as usize].saturating_sub(7);
+                // width includes: label (4 chars) + brackets (2 chars) + bar content
+                // we want total width of this column to be `widths[c]`
+                // label takes 4 chars ("  XX")
+                // percentage_bar adds 2 chars for brackets "[]"
+                // so we need bar content width = widths[c] - 4 - 2 = widths[c] - 6
+                let width = widths[c as usize].saturating_sub(6);
                 let usage = self.data.cores[i].usage;
                 let text = format!("{:.1}%{:>3.0}°C", usage, self.data.cores[i].temp);
                 let bar = percentage_bar(width, usage, &text);
