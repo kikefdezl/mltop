@@ -706,7 +706,7 @@ dependencies = [
 
 [[package]]
 name = "mltop"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "crossterm 0.29.0",
  "itertools",
