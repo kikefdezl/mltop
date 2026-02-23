@@ -36,7 +36,7 @@ fn gpu() -> GpuSnapshot {
         utilization: 50,
         max_power: 500,
         power_usage: 250,
-        fan_speed: 50,
+        fan_speed: Some(50),
     }
 }
 
