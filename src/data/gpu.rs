@@ -25,14 +25,11 @@ impl GpuSnapshot {
             max_memory: memory_info.total,
             used_memory: memory_info.used,
             utilization: device.utilization_rates()?.gpu,
-            // previous behaviour was power management first
-            // enforced appears on laptops
             max_power: device
                 .power_management_limit()
                 .or_else(|_| device.enforced_power_limit())
                 .unwrap_or(0),
             power_usage: device.power_usage()?,
-            // some devices may not have fans, so we default to 0 if it fails?
             fan_speed: device.fan_speed(0).ok(),
         })
     }
