@@ -34,7 +34,10 @@ impl<'a> Widget for GpuWidget<'a> {
         )));
 
         spans.push(Span::styled("   FAN:", Style::default().fg(Color::Cyan)));
-        spans.push(Span::raw(format!("  {:.0}%", self.data.fan_speed)));
+        match self.data.fan_speed {
+            Some(fan_speed) => spans.push(Span::raw(format!("  {:.0}%", fan_speed))),
+            None => spans.push(Span::raw("  N/A")),
+        }
 
         let mut lines = vec![Line::from(spans).alignment(Alignment::Left)];
 

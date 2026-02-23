@@ -11,7 +11,7 @@ pub struct GpuSnapshot {
     pub utilization: u32,
     pub max_power: u32,
     pub power_usage: u32,
-    pub fan_speed: u32,
+    pub fan_speed: Option<u32>,
 }
 
 impl GpuSnapshot {
@@ -25,9 +25,15 @@ impl GpuSnapshot {
             max_memory: memory_info.total,
             used_memory: memory_info.used,
             utilization: device.utilization_rates()?.gpu,
-            max_power: device.power_management_limit()?,
+            // previous behaviour was power management first
+            // enforced appears on laptops
+            max_power: device
+                .power_management_limit()
+                .or_else(|_| device.enforced_power_limit())
+                .unwrap_or(0),
             power_usage: device.power_usage()?,
-            fan_speed: device.fan_speed(0)?,
+            // some devices may not have fans, so we default to 0 if it fails?
+            fan_speed: device.fan_speed(0).ok(),
         })
     }
 }
