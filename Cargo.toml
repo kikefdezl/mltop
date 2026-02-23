@@ -19,6 +19,7 @@ sysinfo = { version = "0.37.2", default-features = false, features = ["system", 
 toml = "0.9.11"
 
 [profile.release]
+codegen-units = 1
 lto = true
 
 # The profile that 'dist' will build with
