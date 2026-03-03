@@ -15,16 +15,15 @@ pub struct CpuSnapshot {
 }
 
 impl CpuSnapshot {
-    pub fn from_sysinfo(sys: &System) -> CpuSnapshot {
+    pub fn from_sysinfo(sys: &System, components: &Components) -> CpuSnapshot {
         let mut cores: Vec<CoreSnapshot> = Vec::new();
 
         // TODO: Fix temperature mismatched for all cores. Have to find a more robust way
         // to find the 1:1 core temperatures.
 
         // gather temperatures from Components in to a map
-        let components = Components::new_with_refreshed_list();
         let mut temperatures = HashMap::new();
-        for component in &components {
+        for component in components {
             let label = component.label();
             if label.contains("Core") {
                 if let Ok(id) = label.split_whitespace().last().unwrap().parse::<usize>() {

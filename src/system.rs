@@ -21,6 +21,7 @@ pub trait SystemMonitor {
 pub struct RealSystem {
     pub sys: SysinfoSystem,
     pub nvml: Option<Nvml>,
+    pub components: sysinfo::Components,
 }
 
 impl Default for RealSystem {
@@ -28,17 +29,17 @@ impl Default for RealSystem {
         RealSystem {
             sys: SysinfoSystem::new(),
             nvml: Nvml::init().ok(),
+            components: sysinfo::Components::new_with_refreshed_list(),
         }
     }
 }
 
 impl RealSystem {
     pub fn refresh(&mut self, kind: &DataUpdateKind) {
-        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-
         self.sys.refresh_cpu_usage();
         self.sys
             .refresh_memory_specifics(MemoryRefreshKind::everything());
+        self.components.refresh(true);
         if kind.processes() {
             self.sys.refresh_processes_specifics(
                 ProcessesToUpdate::All,
@@ -63,7 +64,7 @@ impl SystemMonitor for RealSystem {
         self.refresh(kind);
 
         let cpu = if kind.cpu() {
-            Some(CpuSnapshot::from_sysinfo(&self.sys))
+            Some(CpuSnapshot::from_sysinfo(&self.sys, &self.components))
         } else {
             None
         };
