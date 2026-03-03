@@ -100,7 +100,7 @@ impl ProcessesSnapshot {
 
         // find which ones are GPU and mark them as such
         if let Some(n) = nvml {
-            if let Ok(pids) = _gpu_graphics_pids(n) {
+            if let Ok(pids) = _gpu_compute_pids(n) {
                 _update_process_type(pids, &mut processes, ProcessType::GpuCompute)
             }
             if let Ok(pids) = _gpu_graphics_pids(n) {
