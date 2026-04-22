@@ -11,7 +11,6 @@ repository = "https://github.com/kikefdezl/mltop"
 
 [dependencies]
 crossterm = "0.29.0"
-itertools = "0.14.0"
 nvml-wrapper = "0.11.0"
 ratatui = { version = "0.30.0", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
